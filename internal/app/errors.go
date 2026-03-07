@@ -85,9 +85,17 @@ func NewAmbiguousError(message, input, suggestion string) *CLIError {
 }
 
 func NewNetworkError(message, input, suggestion string, cause error) *CLIError {
+	return newNetworkCLIError("network_error", message, input, suggestion, cause)
+}
+
+func NewNetworkTimeoutError(message, input, suggestion string, cause error) *CLIError {
+	return newNetworkCLIError("network_timeout", message, input, suggestion, cause)
+}
+
+func newNetworkCLIError(errorType, message, input, suggestion string, cause error) *CLIError {
 	return &CLIError{
 		ExitCode:      ExitNetwork,
-		ErrorType:     "network_timeout",
+		ErrorType:     errorType,
 		Message:       message,
 		InputReceived: input,
 		Suggestion:    suggestion,
