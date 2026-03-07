@@ -72,14 +72,17 @@ sboms:
     documents:
       - "{{ .ArtifactName }}.sbom.spdx.json"
 
-brews:
-  - skip_upload: "{{ .IsSnapshot }}"
+homebrew_casks:
+  - name: prayertime-cli
+    ids:
+      - release-archive
+    skip_upload: "{{ .IsSnapshot }}"
     repository:
       owner: "{{ .Env.HOMEBREW_TAP_OWNER }}"
       name: "{{ .Env.HOMEBREW_TAP_NAME }}"
       branch: main
       token: "{{ .Env.GITHUB_TOKEN }}"
-    directory: Formula
+    directory: Casks
     homepage: "https://github.com/SeeknnDestroy/prayertime-cli"
     description: "CLI-first, agent-native Islamic prayer times tool"
     license: "MIT"
@@ -87,14 +90,20 @@ brews:
       name: prayertime-cli bot
       email: actions@github.com
     commit_msg_template: "brew: update {{ .ProjectName }} to {{ .Tag }}"
-    install: |
-      bin.install "prayertime-cli"
-      bash_completion.install "completions/prayertime-cli.bash" => "prayertime-cli"
-      zsh_completion.install "completions/_prayertime-cli"
-      fish_completion.install "completions/prayertime-cli.fish"
-      man1.install Dir["docs/man/*.1"]
-    test: |
-      system "#{bin}/prayertime-cli", "version"
+    binaries:
+      - prayertime-cli
+    manpages:
+      - docs/man/*.1
+    completions:
+      bash: completions/prayertime-cli.bash
+      zsh: completions/_prayertime-cli
+      fish: completions/prayertime-cli.fish
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/prayertime-cli"]
+          end
 
 scoops:
   - skip_upload: "{{ .IsSnapshot }}"

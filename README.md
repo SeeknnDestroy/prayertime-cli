@@ -35,15 +35,18 @@ go build ./cmd/prayertime-cli
 
 ## Install
 
-Tagged releases are published as cross-platform binaries. Package manager automation is wired for Homebrew and Scoop.
+Tagged releases are published as cross-platform binaries. Package manager automation is wired for Homebrew Cask and Scoop.
 
 ```bash
+# Homebrew
 brew tap SeeknnDestroy/homebrew-tap
-brew install prayertime-cli
+brew install --cask prayertime-cli
 
+# Scoop
 scoop bucket add prayertime-cli https://github.com/SeeknnDestroy/scoop-bucket
 scoop install prayertime-cli
 
+# Go
 go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ```
 

@@ -12,6 +12,8 @@ Current companion repositories:
 - `SeeknnDestroy/homebrew-tap`
 - `SeeknnDestroy/scoop-bucket`
 
+Homebrew publishing uses a cask in the tap's `Casks/` directory.
+
 ## Required GitHub Secret
 
 - `GH_PAT`
