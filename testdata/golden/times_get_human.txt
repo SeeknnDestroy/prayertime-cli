@@ -1,0 +1,15 @@
+Location: Istanbul, Türkiye
+Timezone: Europe/Istanbul
+Date: 2026-03-07
+Imsak: 2026-03-07T05:46:00+03:00
+Fajr: 2026-03-07T05:56:00+03:00
+Sunrise: 2026-03-07T07:21:00+03:00
+Dhuhr: 2026-03-07T13:20:00+03:00
+Asr: 2026-03-07T16:31:00+03:00
+Maghrib: 2026-03-07T19:09:00+03:00
+Sunset: 2026-03-07T19:09:00+03:00
+Isha: 2026-03-07T20:28:00+03:00
+Method: 13 Diyanet İşleri Başkanlığı, Turkey (experimental)
+Source: aladhan:method=13
+Ramadan active: true
+
