@@ -65,11 +65,6 @@ func (s *Service) GetTimes(ctx context.Context, req TimesRequest) (TimesResponse
 }
 
 func (s *Service) GetCountdown(ctx context.Context, req CountdownRequest) (CountdownResponse, error) {
-	location, err := s.resolveLocation(ctx, req.Query, req.CountryCode, req.Latitude, req.Longitude)
-	if err != nil {
-		return CountdownResponse{}, err
-	}
-
 	target, ok := NormalizeTarget(req.Target)
 	if !ok {
 		return CountdownResponse{}, NewUsageError(
@@ -77,6 +72,11 @@ func (s *Service) GetCountdown(ctx context.Context, req CountdownRequest) (Count
 			req.Target,
 			"Use one of: next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, iftar.",
 		)
+	}
+
+	location, err := s.resolveLocation(ctx, req.Query, req.CountryCode, req.Latitude, req.Longitude)
+	if err != nil {
+		return CountdownResponse{}, err
 	}
 
 	asOf := s.clock.Now()

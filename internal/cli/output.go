@@ -93,14 +93,23 @@ func writeCountdownHuman(out io.Writer, response app.CountdownResponse, quiet bo
 	return err
 }
 
-func selectTimesField(response app.TimesResponse, field string) (string, string, error) {
+func resolveTimesField(field string) (string, error) {
 	resolved, ok := app.NormalizeField(field)
 	if !ok {
-		return "", "", app.NewUsageError(
+		return "", app.NewUsageError(
 			fmt.Sprintf("unsupported field %q", field),
 			field,
 			"Use fields like imsak, fajr, iftar, timezone, method_name, or source.",
 		)
+	}
+
+	return resolved, nil
+}
+
+func selectTimesField(response app.TimesResponse, field string) (string, string, error) {
+	resolved, err := resolveTimesField(field)
+	if err != nil {
+		return "", "", err
 	}
 
 	values := map[string]string{

@@ -149,6 +149,30 @@ func TestCLIUsageErrorsHonorJSONOutput(t *testing.T) {
 	}
 }
 
+func TestCLIRejectsUnsupportedFieldBeforeProviderCall(t *testing.T) {
+	t.Parallel()
+
+	provider := &cliSpyProvider{}
+	stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
+		Resolver: cliFakeResolver{},
+		Provider: provider,
+		Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+	}, "times", "get", "--lat", "41.01384", "--lon", "28.94966", "--field", "bogus")
+
+	if exitCode != app.ExitUsage {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitUsage)
+	}
+	if provider.calls != 0 {
+		t.Fatalf("provider.calls = %d, want 0", provider.calls)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty", stdout)
+	}
+	if !strings.Contains(stderr, `unsupported field "bogus"`) {
+		t.Fatalf("stderr = %q, want unsupported field error", stderr)
+	}
+}
+
 func executeTestCommand(t *testing.T, deps Dependencies, args ...string) (string, string, int) {
 	t.Helper()
 
@@ -204,6 +228,15 @@ func (cliFakeProvider) GetByCoordinates(ctx context.Context, latitude, longitude
 		Source:        "aladhan:method=13",
 		RamadanActive: true,
 	}, nil
+}
+
+type cliSpyProvider struct {
+	calls int
+}
+
+func (p *cliSpyProvider) GetByCoordinates(ctx context.Context, latitude, longitude float64, date time.Time) (app.DaySchedule, error) {
+	p.calls++
+	return app.DaySchedule{}, nil
 }
 
 type cliFixedClock struct {
