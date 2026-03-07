@@ -33,7 +33,37 @@ go test ./...
 go build ./cmd/prayertime-cli
 ```
 
+## Kurulum
+
+Etiketli sürümler çapraz platform ikili dosyalar olarak yayımlanır. Homebrew ve Scoop otomasyonu hazırdır.
+
+```bash
+brew tap SeeknnDestroy/homebrew-tap
+brew install prayertime-cli
+
+scoop bucket add prayertime-cli https://github.com/SeeknnDestroy/scoop-bucket
+scoop install prayertime-cli
+
+go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
+```
+
+## Örnekler
+
+```bash
+prayertime-cli locations search --query Istanbul --country-code TR --json
+prayertime-cli times get --query Istanbul --field iftar --quiet
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+```
+
+## Çıkış Kodları
+
+- `0`: başarılı
+- `1`: iç hata
+- `2`: kullanım hatası
+- `3`: bulunamadı veya belirsiz girdi
+- `4`: ağ veya upstream zaman aşımı
+- `5`: gelecekteki state conflict kodu
+
 ## Lisans
 
 MIT
-

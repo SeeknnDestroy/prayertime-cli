@@ -1,0 +1,63 @@
+.nh
+.TH "prayertime-cli" "1" "Mar 2026" "prayertime-cli" ""
+
+.SH NAME
+prayertime-cli-times-get - Fetch prayer times for a location and date
+
+
+.SH SYNOPSIS
+\fBprayertime-cli times get [flags]\fP
+
+
+.SH DESCRIPTION
+Fetch prayer times for a location and date
+
+
+.SH OPTIONS
+\fB--country-code\fP=""
+	Optional ISO country code filter
+
+.PP
+\fB--date\fP="today"
+	Date in YYYY-MM-DD format or 'today'
+
+.PP
+\fB--field\fP=""
+	Return a single field such as maghrib, iftar, imsak, timezone, or method_name
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for get
+
+.PP
+\fB--lat\fP=0
+	Latitude coordinate
+
+.PP
+\fB--lon\fP=0
+	Longitude coordinate
+
+.PP
+\fB--query\fP=""
+	Place name to resolve before fetching prayer times
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
+	Emit only the selected field value
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB--json\fP[=false]
+	Emit JSON output to stdout
+
+
+.SH EXAMPLE
+.EX
+prayertime-cli times get --query Istanbul
+prayertime-cli times get --query Istanbul --date 2026-03-07 --json
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
+.EE
+
+
+.SH SEE ALSO
+\fBprayertime-cli-times(1)\fP

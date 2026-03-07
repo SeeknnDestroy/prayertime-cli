@@ -1,0 +1,28 @@
+name: contract-checks
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  contract-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Check daily times contract
+        run: |
+          go run ./cmd/prayertime-cli times get --query Istanbul --country-code TR --json > /tmp/times.json
+          jq -e '.method_id == 13 and .timezone == "Europe/Istanbul" and .maghrib_at != ""' /tmp/times.json
+
+      - name: Check countdown contract
+        run: |
+          go run ./cmd/prayertime-cli times countdown --query Istanbul --country-code TR --target iftar --json > /tmp/countdown.json
+          jq -e '.target == "maghrib" and (.seconds_remaining > 0)' /tmp/countdown.json

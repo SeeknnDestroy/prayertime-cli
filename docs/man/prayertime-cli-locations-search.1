@@ -1,0 +1,46 @@
+.nh
+.TH "prayertime-cli" "1" "Mar 2026" "prayertime-cli" ""
+
+.SH NAME
+prayertime-cli-locations-search - Search for a place and return candidate coordinates
+
+
+.SH SYNOPSIS
+\fBprayertime-cli locations search [flags]\fP
+
+
+.SH DESCRIPTION
+Search for a place and return candidate coordinates
+
+
+.SH OPTIONS
+\fB--country-code\fP=""
+	Optional ISO country code filter
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for search
+
+.PP
+\fB--limit\fP=5
+	Maximum number of results to return
+
+.PP
+\fB--query\fP=""
+	Place name to search
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB--json\fP[=false]
+	Emit JSON output to stdout
+
+
+.SH EXAMPLE
+.EX
+prayertime-cli locations search --query Istanbul
+prayertime-cli locations search --query London --country-code GB --json
+.EE
+
+
+.SH SEE ALSO
+\fBprayertime-cli-locations(1)\fP
