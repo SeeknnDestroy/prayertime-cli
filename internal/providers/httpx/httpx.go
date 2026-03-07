@@ -3,6 +3,7 @@ package httpx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/SeeknnDestroy/prayertime-cli/internal/app"
 )
+
+var waitBeforeRetry = sleepWithContext
 
 func GetJSON(ctx context.Context, client *http.Client, url string, target any) error {
 	var lastErr error
@@ -26,20 +29,23 @@ func GetJSON(ctx context.Context, client *http.Client, url string, target any) e
 		if err != nil {
 			lastErr = err
 			if shouldRetry(err, 0) && attempt < 2 {
-				if waitErr := sleepWithContext(ctx, backoff); waitErr != nil {
-					return app.NewNetworkError("request cancelled while waiting to retry", url, "Retry the command in a few seconds.", waitErr)
+				if waitErr := waitBeforeRetry(ctx, backoff); waitErr != nil {
+					return newNetworkCLIError("request cancelled while waiting to retry", url, waitErr)
 				}
 				backoff *= 2
 				continue
 			}
-			return app.NewNetworkError("upstream request timed out after retries", url, "Retry the command in a few seconds.", err)
+			if isTimeoutError(err) {
+				return app.NewNetworkTimeoutError("upstream request timed out after retries", url, "Retry the command in a few seconds.", err)
+			}
+			return app.NewNetworkError("upstream request failed before a response was received", url, "Check network connectivity or upstream TLS/proxy settings and retry.", err)
 		}
 
 		if shouldRetry(nil, resp.StatusCode) && attempt < 2 {
 			lastErr = fmt.Errorf("upstream status %d", resp.StatusCode)
-			resp.Body.Close()
-			if waitErr := sleepWithContext(ctx, backoff); waitErr != nil {
-				return app.NewNetworkError("request cancelled while waiting to retry", url, "Retry the command in a few seconds.", waitErr)
+			closeBody(resp.Body)
+			if waitErr := waitBeforeRetry(ctx, backoff); waitErr != nil {
+				return newNetworkCLIError("request cancelled while waiting to retry", url, waitErr)
 			}
 			backoff *= 2
 			continue
@@ -47,7 +53,7 @@ func GetJSON(ctx context.Context, client *http.Client, url string, target any) e
 
 		if resp.StatusCode >= 400 {
 			body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-			resp.Body.Close()
+			closeBody(resp.Body)
 			return app.NewInternalError(
 				fmt.Sprintf("upstream request failed with status %d", resp.StatusCode),
 				url,
@@ -58,26 +64,44 @@ func GetJSON(ctx context.Context, client *http.Client, url string, target any) e
 
 		decoder := json.NewDecoder(resp.Body)
 		if err := decoder.Decode(target); err != nil {
-			resp.Body.Close()
+			closeBody(resp.Body)
 			return app.NewInternalError("failed to decode upstream response", url, "", err)
 		}
-		resp.Body.Close()
+		closeBody(resp.Body)
 
 		return nil
 	}
 
-	return app.NewNetworkError("upstream request timed out after retries", url, "Retry the command in a few seconds.", lastErr)
+	return newNetworkCLIError("upstream request failed before a response was received", url, lastErr)
 }
 
 func shouldRetry(err error, statusCode int) bool {
 	if err != nil {
-		if netErr, ok := err.(net.Error); ok && (netErr.Timeout() || netErr.Temporary()) {
-			return true
-		}
-		return true
+		return isTimeoutError(err)
 	}
 
 	return statusCode == http.StatusTooManyRequests || statusCode >= http.StatusInternalServerError
+}
+
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
+}
+
+func newNetworkCLIError(message, url string, cause error) error {
+	if isTimeoutError(cause) {
+		return app.NewNetworkTimeoutError(message, url, "Retry the command in a few seconds.", cause)
+	}
+
+	return app.NewNetworkError(message, url, "Check network connectivity or upstream TLS/proxy settings and retry.", cause)
 }
 
 func sleepWithContext(ctx context.Context, duration time.Duration) error {
@@ -90,4 +114,8 @@ func sleepWithContext(ctx context.Context, duration time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+func closeBody(closer io.Closer) {
+	_ = closer.Close()
 }
