@@ -35,15 +35,18 @@ go build ./cmd/prayertime-cli
 
 ## Kurulum
 
-Etiketli sürümler çapraz platform ikili dosyalar olarak yayımlanır. Homebrew ve Scoop otomasyonu hazırdır.
+Etiketli sürümler çapraz platform ikili dosyalar olarak yayımlanır. Homebrew Cask ve Scoop otomasyonu hazırdır.
 
 ```bash
+# Homebrew
 brew tap SeeknnDestroy/homebrew-tap
-brew install prayertime-cli
+brew install --cask prayertime-cli
 
+# Scoop
 scoop bucket add prayertime-cli https://github.com/SeeknnDestroy/scoop-bucket
 scoop install prayertime-cli
 
+# Go
 go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ```
 
