@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "name": "Istanbul",
+      "country": "Türkiye",
+      "country_code": "TR",
+      "admin1": "Istanbul",
+      "latitude": 41.01384,
+      "longitude": 28.94966,
+      "timezone": "Europe/Istanbul"
+    },
+    {
+      "name": "Istanbul Airport",
+      "country": "Türkiye",
+      "country_code": "TR",
+      "admin1": "Istanbul",
+      "latitude": 41.2629,
+      "longitude": 28.74242,
+      "timezone": "Europe/Istanbul"
+    }
+  ]
+}
+

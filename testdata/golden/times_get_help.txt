@@ -1,0 +1,22 @@
+Fetch prayer times for a location and date
+
+Usage:
+  prayertime-cli times get [flags]
+
+Examples:
+prayertime-cli times get --query Istanbul
+prayertime-cli times get --query Istanbul --date 2026-03-07 --json
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
+
+Flags:
+      --country-code string   Optional ISO country code filter
+      --date string           Date in YYYY-MM-DD format or 'today' (default "today")
+      --field string          Return a single field such as maghrib, iftar, imsak, timezone, or method_name
+  -h, --help                  help for get
+      --lat float             Latitude coordinate
+      --lon float             Longitude coordinate
+      --query string          Place name to resolve before fetching prayer times
+  -q, --quiet                 Emit only the selected field value
+
+Global Flags:
+      --json   Emit JSON output to stdout
