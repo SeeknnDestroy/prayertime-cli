@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,10 +20,6 @@ type Dependencies struct {
 	Resolver app.LocationResolver
 	Provider app.PrayerTimeProvider
 	Clock    app.Clock
-}
-
-type rootOptions struct {
-	json bool
 }
 
 func Execute() int {
@@ -59,7 +54,7 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 	}
 
 	service := app.NewService(deps.Resolver, deps.Provider, deps.Clock)
-	options := &rootOptions{}
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:           "prayertime-cli",
@@ -70,13 +65,10 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 
 	cmd.SetOut(deps.Stdout)
 	cmd.SetErr(deps.Stderr)
-	cmd.PersistentFlags().BoolVar(&options.json, "json", false, "Emit JSON output to stdout")
+	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit JSON output to stdout")
 	cmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
 		return app.NewUsageError(err.Error(), "", "Run 'prayertime-cli --help' for usage.")
 	})
-	cmd.PersistentPreRun = func(command *cobra.Command, args []string) {
-		command.SetContext(context.WithValue(command.Context(), rootOptionsKey{}, options))
-	}
 	cmd.Version = version.String()
 	cmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
 	cmd.AddCommand(newVersionCmd())
@@ -86,13 +78,25 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 	return cmd
 }
 
-type rootOptionsKey struct{}
-
 func isJSONEnabled(cmd *cobra.Command) bool {
-	if value := cmd.Context().Value(rootOptionsKey{}); value != nil {
-		if options, ok := value.(*rootOptions); ok {
-			return options.json
-		}
+	if cmd == nil {
+		return false
+	}
+
+	if value, err := cmd.Flags().GetBool("json"); err == nil {
+		return value
+	}
+
+	root := cmd.Root()
+	if root == nil || root == cmd {
+		return false
+	}
+
+	if value, err := root.Flags().GetBool("json"); err == nil {
+		return value
+	}
+	if value, err := root.PersistentFlags().GetBool("json"); err == nil {
+		return value
 	}
 
 	return false

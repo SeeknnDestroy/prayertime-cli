@@ -3,8 +3,10 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -57,29 +59,19 @@ func TestCLIGoldenOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			var stdout bytes.Buffer
-			var stderr bytes.Buffer
-			cmd := NewRootCmd(Dependencies{
-				Stdout:   &stdout,
-				Stderr:   &stderr,
+			stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
 				Resolver: cliFakeResolver{},
 				Provider: cliFakeProvider{},
 				Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
-			})
-			cmd.SetArgs(tc.args)
-
-			exitCode := app.ExitSuccess
-			if err := cmd.Execute(); err != nil {
-				exitCode = renderCommandError(&stdout, &stderr, isJSONEnabled(cmd), err)
-			}
+			}, tc.args...)
 
 			if exitCode != tc.wantExit {
 				t.Fatalf("exitCode = %d, want %d", exitCode, tc.wantExit)
 			}
 
-			got := stdout.String()
+			got := stdout
 			if tc.wantStream == "stderr" {
-				got = stderr.String()
+				got = stderr
 			}
 
 			want, err := os.ReadFile(tc.wantFile)
@@ -94,6 +86,86 @@ func TestCLIGoldenOutputs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCLIUsageErrorsHonorJSONOutput(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "runtime validation error",
+			args: []string{"times", "get", "--json"},
+		},
+		{
+			name: "flag parse error",
+			args: []string{"times", "get", "--json", "--badflag"},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
+				Resolver: cliFakeResolver{},
+				Provider: cliFakeProvider{},
+				Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+			}, tc.args...)
+
+			if exitCode != app.ExitUsage {
+				t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitUsage)
+			}
+			if stderr != "" {
+				t.Fatalf("stderr = %q, want empty", stderr)
+			}
+
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+				t.Fatalf("Unmarshal(stdout): %v\nstdout=%q", err, stdout)
+			}
+
+			want := map[string]any{
+				"ok":             false,
+				"exit_code":      float64(app.ExitUsage),
+				"error_type":     "usage_error",
+				"input_received": "",
+			}
+			for key, wantValue := range want {
+				if !reflect.DeepEqual(payload[key], wantValue) {
+					t.Fatalf("payload[%q] = %#v, want %#v", key, payload[key], wantValue)
+				}
+			}
+			if payload["message"] == "" {
+				t.Fatal("payload[\"message\"] is empty")
+			}
+			if payload["suggestion"] == "" {
+				t.Fatal("payload[\"suggestion\"] is empty")
+			}
+		})
+	}
+}
+
+func executeTestCommand(t *testing.T, deps Dependencies, args ...string) (string, string, int) {
+	t.Helper()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	deps.Stdout = &stdout
+	deps.Stderr = &stderr
+
+	cmd := NewRootCmd(deps)
+	cmd.SetArgs(args)
+
+	exitCode := app.ExitSuccess
+	if err := cmd.Execute(); err != nil {
+		exitCode = renderCommandError(&stdout, &stderr, isJSONEnabled(cmd), err)
+	}
+
+	return stdout.String(), stderr.String(), exitCode
 }
 
 type cliFakeResolver struct{}
