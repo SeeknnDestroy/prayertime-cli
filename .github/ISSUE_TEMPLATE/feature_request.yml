@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a new capability or improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should the project solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the suggested solution or CLI behavior.
+    validations:
+      required: true
+
