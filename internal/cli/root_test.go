@@ -173,6 +173,26 @@ func TestCLIRejectsUnsupportedFieldBeforeProviderCall(t *testing.T) {
 	}
 }
 
+func TestCLIAcceptsRamadanActiveField(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
+		Resolver: cliFakeResolver{},
+		Provider: cliFakeProvider{},
+		Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+	}, "times", "get", "--query", "Istanbul", "--field", "ramadan_active", "--quiet")
+
+	if exitCode != app.ExitSuccess {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+	if stdout != "true\n" {
+		t.Fatalf("stdout = %q, want %q", stdout, "true\n")
+	}
+}
+
 func executeTestCommand(t *testing.T, deps Dependencies, args ...string) (string, string, int) {
 	t.Helper()
 

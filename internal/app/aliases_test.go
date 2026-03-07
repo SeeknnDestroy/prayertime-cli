@@ -30,9 +30,11 @@ func TestNormalizeFieldAliases(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]string{
-		"iftar": "maghrib_at",
-		"öğle":  "dhuhr_at",
-		"yatsı": "isha_at",
+		"iftar":          "maghrib_at",
+		"öğle":           "dhuhr_at",
+		"yatsı":          "isha_at",
+		"ramadan_active": "ramadan_active",
+		"ramadan-active": "ramadan_active",
 	}
 
 	for input, want := range cases {
