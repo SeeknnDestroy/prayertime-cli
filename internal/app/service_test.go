@@ -30,6 +30,30 @@ func (f fixedClock) Now() time.Time {
 	return f.now
 }
 
+type spyResolver struct {
+	results     []Location
+	searchCalls int
+}
+
+func (s *spyResolver) Search(ctx context.Context, query, countryCode string, limit int) ([]Location, error) {
+	s.searchCalls++
+	return s.results, nil
+}
+
+type spyProvider struct {
+	schedules map[string]DaySchedule
+	calls     int
+}
+
+func (s *spyProvider) GetByCoordinates(ctx context.Context, latitude, longitude float64, date time.Time) (DaySchedule, error) {
+	s.calls++
+	if s.schedules == nil {
+		return DaySchedule{}, nil
+	}
+
+	return s.schedules[date.Format("2006-01-02")], nil
+}
+
 func TestServiceGetCountdownUsesNextDayAfterTargetPasses(t *testing.T) {
 	t.Parallel()
 
@@ -114,6 +138,43 @@ func TestServiceGetTimesReturnsAmbiguousLocation(t *testing.T) {
 	}
 	if cliErr.ErrorType != "ambiguous_location" {
 		t.Fatalf("ErrorType = %q, want ambiguous_location", cliErr.ErrorType)
+	}
+}
+
+func TestServiceGetCountdownRejectsInvalidTargetBeforeLookup(t *testing.T) {
+	t.Parallel()
+
+	resolver := &spyResolver{
+		results: []Location{{
+			Name:        "Istanbul",
+			Country:     "Türkiye",
+			CountryCode: "TR",
+			Admin1:      "Istanbul",
+			Latitude:    41.01384,
+			Longitude:   28.94966,
+			Timezone:    "Europe/Istanbul",
+		}},
+	}
+	provider := &spyProvider{}
+	service := NewService(resolver, provider, fixedClock{})
+
+	_, err := service.GetCountdown(context.Background(), CountdownRequest{
+		Query:  "Istanbul",
+		Target: "bogus",
+	})
+	if err == nil {
+		t.Fatal("expected usage error")
+	}
+
+	cliErr := AsCLIError(err)
+	if cliErr.ExitCode != ExitUsage {
+		t.Fatalf("ExitCode = %d, want %d", cliErr.ExitCode, ExitUsage)
+	}
+	if resolver.searchCalls != 0 {
+		t.Fatalf("resolver.searchCalls = %d, want 0", resolver.searchCalls)
+	}
+	if provider.calls != 0 {
+		t.Fatalf("provider.calls = %d, want 0", provider.calls)
 	}
 }
 

@@ -50,6 +50,15 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
 				return app.NewUsageError("--quiet requires --field for 'times get'", "", "Provide --field to choose a single value.")
 			}
 
+			resolvedField := ""
+			if field != "" {
+				var err error
+				resolvedField, err = resolveTimesField(field)
+				if err != nil {
+					return err
+				}
+			}
+
 			request := app.TimesRequest{
 				Query:       query,
 				CountryCode: strings.ToUpper(countryCode),
@@ -71,7 +80,7 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
 				return writeJSON(cmd.OutOrStdout(), response)
 			}
 
-			return writeTimesHuman(cmd.OutOrStdout(), response, field, quiet)
+			return writeTimesHuman(cmd.OutOrStdout(), response, resolvedField, quiet)
 		},
 	}
 
