@@ -33,7 +33,37 @@ go test ./...
 go build ./cmd/prayertime-cli
 ```
 
+## Install
+
+Tagged releases are published as cross-platform binaries. Package manager automation is wired for Homebrew and Scoop.
+
+```bash
+brew tap SeeknnDestroy/homebrew-tap
+brew install prayertime-cli
+
+scoop bucket add prayertime-cli https://github.com/SeeknnDestroy/scoop-bucket
+scoop install prayertime-cli
+
+go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
+```
+
+## Examples
+
+```bash
+prayertime-cli locations search --query Istanbul --country-code TR --json
+prayertime-cli times get --query Istanbul --field iftar --quiet
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+```
+
+## Exit Codes
+
+- `0`: success
+- `1`: internal failure
+- `2`: usage error
+- `3`: not found or ambiguous input
+- `4`: network or upstream timeout
+- `5`: reserved conflict/state error
+
 ## License
 
 MIT
-

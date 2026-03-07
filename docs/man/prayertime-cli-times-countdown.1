@@ -1,0 +1,63 @@
+.nh
+.TH "prayertime-cli" "1" "Mar 2026" "prayertime-cli" ""
+
+.SH NAME
+prayertime-cli-times-countdown - Calculate seconds and minutes remaining until a target prayer
+
+
+.SH SYNOPSIS
+\fBprayertime-cli times countdown [flags]\fP
+
+
+.SH DESCRIPTION
+Calculate seconds and minutes remaining until a target prayer
+
+
+.SH OPTIONS
+\fB--at\fP=""
+	Optional RFC3339 timestamp to evaluate countdown from
+
+.PP
+\fB--country-code\fP=""
+	Optional ISO country code filter
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for countdown
+
+.PP
+\fB--lat\fP=0
+	Latitude coordinate
+
+.PP
+\fB--lon\fP=0
+	Longitude coordinate
+
+.PP
+\fB--query\fP=""
+	Place name to resolve before fetching prayer times
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
+	Emit only remaining seconds
+
+.PP
+\fB--target\fP=""
+	Target prayer: next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, iftar
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB--json\fP[=false]
+	Emit JSON output to stdout
+
+
+.SH EXAMPLE
+.EX
+prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+.EE
+
+
+.SH SEE ALSO
+\fBprayertime-cli-times(1)\fP

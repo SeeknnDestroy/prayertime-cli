@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: prayertime-cli
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+    - go run ./cmd/prayertime-cli-docs
+
+builds:
+  - id: prayertime-cli
+    main: ./cmd/prayertime-cli
+    binary: prayertime-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/SeeknnDestroy/prayertime-cli/internal/version.commit={{ .Commit }}
+        -X github.com/SeeknnDestroy/prayertime-cli/internal/version.date={{ .Date }}
+        -X github.com/SeeknnDestroy/prayertime-cli/internal/version.tag={{ .Version }}
+
+archives:
+  - id: release-archive
+    ids:
+      - prayertime-cli
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+      - README.tr.md
+      - completions/*
+      - docs/cli/*
+      - docs/man/*
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev"
+
+source:
+  enabled: true
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  replace_existing_draft: true
+
+sboms:
+  - artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.sbom.spdx.json"
+
+brews:
+  - skip_upload: "{{ .IsSnapshot }}"
+    repository:
+      owner: "{{ .Env.HOMEBREW_TAP_OWNER }}"
+      name: "{{ .Env.HOMEBREW_TAP_NAME }}"
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/SeeknnDestroy/prayertime-cli"
+    description: "CLI-first, agent-native Islamic prayer times tool"
+    license: "MIT"
+    commit_author:
+      name: prayertime-cli bot
+      email: actions@github.com
+    commit_msg_template: "brew: update {{ .ProjectName }} to {{ .Tag }}"
+    install: |
+      bin.install "prayertime-cli"
+      bash_completion.install "completions/prayertime-cli.bash" => "prayertime-cli"
+      zsh_completion.install "completions/_prayertime-cli"
+      fish_completion.install "completions/prayertime-cli.fish"
+      man1.install Dir["docs/man/*.1"]
+    test: |
+      system "#{bin}/prayertime-cli", "version"
+
+scoops:
+  - skip_upload: "{{ .IsSnapshot }}"
+    repository:
+      owner: "{{ .Env.SCOOP_BUCKET_OWNER }}"
+      name: "{{ .Env.SCOOP_BUCKET_NAME }}"
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: "https://github.com/SeeknnDestroy/prayertime-cli"
+    description: "CLI-first, agent-native Islamic prayer times tool"
+    license: "MIT"
+    commit_author:
+      name: prayertime-cli bot
+      email: actions@github.com
+    commit_msg_template: "scoop: update {{ .ProjectName }} to {{ .Tag }}"
