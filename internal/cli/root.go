@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/SeeknnDestroy/prayertime-cli/internal/app"
@@ -57,15 +58,25 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 	var jsonOutput bool
 
 	cmd := &cobra.Command{
-		Use:           "prayertime-cli",
-		Short:         "CLI-first, agent-native Islamic prayer times tool",
+		Use:   "prayertime-cli",
+		Short: "CLI-first, agent-native Islamic prayer times tool",
+		Long: strings.TrimSpace(`
+Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+
+MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
+`),
+		Example: strings.TrimSpace(`
+prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
+prayertime-cli times get --query Istanbul --json
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+`),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
 	cmd.SetOut(deps.Stdout)
 	cmd.SetErr(deps.Stderr)
-	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit JSON output to stdout")
+	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit structured JSON to stdout")
 	cmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
 		return app.NewUsageError(err.Error(), "", "Run 'prayertime-cli --help' for usage.")
 	})

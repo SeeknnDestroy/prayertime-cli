@@ -10,7 +10,10 @@ prayertime-cli - CLI-first, agent-native Islamic prayer times tool
 
 
 .SH DESCRIPTION
-CLI-first, agent-native Islamic prayer times tool
+Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+
+.PP
+MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
 
 
 .SH OPTIONS
@@ -19,7 +22,15 @@ CLI-first, agent-native Islamic prayer times tool
 
 .PP
 \fB--json\fP[=false]
-	Emit JSON output to stdout
+	Emit structured JSON to stdout
+
+
+.SH EXAMPLE
+.EX
+prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
+prayertime-cli times get --query Istanbul --json
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+.EE
 
 
 .SH SEE ALSO

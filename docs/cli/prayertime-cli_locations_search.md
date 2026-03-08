@@ -2,6 +2,12 @@
 
 Search for a place and return candidate coordinates
 
+### Synopsis
+
+Search for a place before requesting prayer times.
+
+Use this command first when a user-supplied place may be ambiguous, incomplete, or misspelled.
+
 ```
 prayertime-cli locations search [flags]
 ```
@@ -10,7 +16,8 @@ prayertime-cli locations search [flags]
 
 ```
 prayertime-cli locations search --query Istanbul
-prayertime-cli locations search --query London --country-code GB --json
+prayertime-cli locations search --query Springfield --country-code US --limit 3 --json
+prayertime-cli locations search --query Istnbul --json
 ```
 
 ### Options
@@ -25,7 +32,7 @@ prayertime-cli locations search --query London --country-code GB --json
 ### Options inherited from parent commands
 
 ```
-      --json   Emit JSON output to stdout
+      --json   Emit structured JSON to stdout
 ```
 
 ### SEE ALSO

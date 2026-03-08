@@ -1,37 +1,76 @@
 # prayertime-cli
 
-`prayertime-cli`, terminal ve ajan kullanımına uygun, açık kaynaklı bir namaz vakti aracıdır.
+`prayertime-cli`, namaz vakitleri ve geri sayımlar için stateless bir CLI aracıdır. Ajanlar, kabuk betikleri ve doğrudan terminal kullanımı için tasarlanmıştır.
 
-## Amaçlar
+## MVP 1
 
-- Günlük namaz vakitlerini ve geri sayımları kararlı bir CLI sözleşmesiyle sunmak.
-- Katı JSON desteği ve öngörülebilir çıkış kodlarıyla yapay zeka ajanları ve kabuk betikleri için uygun olmak.
-- İlk aşamada Open-Meteo konum çözümleme ve AlAdhan `method=13` (Diyanet) ile stateless bir MVP sunmak.
+- Open-Meteo ile konum arama
+- AlAdhan `method=13` (Diyanet) ile günlük vakit alma
+- Bir sonraki namaza veya belirli bir vakte geri sayım yapma
+- `stdout` üzerinde JSON ya da `--quiet` ile tek değer döndürme
 
-## Planlanan Komut Yüzeyi
+## Girdi Modeli
 
-```text
-prayertime-cli locations search --query <metin> [--country-code TR] [--limit 5] [--json]
-prayertime-cli times get (--query <metin> | --lat <float> --lon <float>) [--country-code TR] [--date YYYY-MM-DD|today] [--json] [--field <alan>] [--quiet]
-prayertime-cli times countdown (--query <metin> | --lat <float> --lon <float>) --target next-prayer|fajr|sunrise|dhuhr|asr|maghrib|isha|imsak|iftar [--at RFC3339] [--json] [--quiet]
-prayertime-cli version
-```
+- MVP 1 içinde kayıtlı varsayılan konum yoktur.
+- Her `times` komutu ya `--query <yer>` ya da birlikte `--lat <float>` ve `--lon <float>` ister.
+- `--date today`, hedef konumun saat dilimine göre çözülür.
 
-## İlkeler
+## Yaygın Görevler
 
-- Komutlar ve bayraklar İngilizce ve kanoniktir.
-- Türkçe destek yalnızca namaz adı ve alan seçici takma adlarıyla sınırlıdır.
-- JSON çıktıları `stdout` üzerinden verilir; tanılayıcı bilgiler `stderr` üzerinde kalır.
-- CLI etkileşimli onay istemez.
-
-## Geliştirme
-
-Bu depo Go 1.26 kullanır ve aşamalı, stacked PR iş akışını takip eder.
+Önce aday konumları bul:
 
 ```bash
-go test ./...
-go build ./cmd/prayertime-cli
+prayertime-cli locations search --query "Springfield" --country-code US --json
 ```
+
+Bugünün tam namaz vakitlerini al:
+
+```bash
+prayertime-cli times get --query Istanbul --json
+```
+
+Otomasyon için tek bir alan çıkar:
+
+```bash
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+```
+
+"Ezana kaç dakika kaldı?" gibi genel bir geri sayım sor:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+```
+
+Belirli bir vakte, örneğin iftara, kalan süreyi sor:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+```
+
+Yer adı yerine koordinat kullan:
+
+```bash
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date today --json
+```
+
+Yazım hatası veya belirsiz şehir sorgusunu düzelt:
+
+```bash
+prayertime-cli locations search --query Istnbul --json
+```
+
+## Çıktı Modları
+
+- `--json`: yapılandırılmış çıktı `stdout` üzerindedir. Hatalar da JSON olarak `stdout` üzerindedir.
+- `--quiet`: tek bir yalın değer döndürür. `times get` için `--field` gerekir.
+- Varsayılan insan modu: okunabilir çıktı `stdout`, hata ve yönlendirme `stderr`.
+- Kesin çıkış kodları gerekiyorsa derlenmiş ikiliyi çalıştır. `go run` sıfır olmayan çıkışları sarar.
+
+## Takma Adlar
+
+- Komutlar ve bayraklar İngilizce ve kanoniktir.
+- Namaz hedefleri ve alan seçiciler için Türkçe anlamsal takma adlar desteklenir.
+- `iftar` ve `aksam`, `maghrib` olur; `yatsi`, `isha` olur; `ogle`, `dhuhr` olur.
 
 ## Kurulum
 
@@ -50,12 +89,12 @@ scoop install prayertime-cli
 go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ```
 
-## Örnekler
+## Geliştirme Ve Dokümantasyon
 
 ```bash
-prayertime-cli locations search --query Istanbul --country-code TR --json
-prayertime-cli times get --query Istanbul --field iftar --quiet
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
+go test ./...
+go run ./cmd/prayertime-cli-docs
+go build ./cmd/prayertime-cli
 ```
 
 ## Çıkış Kodları
@@ -66,6 +105,14 @@ prayertime-cli times countdown --query Istanbul --target next-prayer --json
 - `3`: bulunamadı veya belirsiz girdi
 - `4`: ağ veya upstream zaman aşımı
 - `5`: gelecekteki state conflict kodu
+
+## Ek Dokümanlar
+
+- [Agent Workflows](docs/agent-workflows.md)
+- [CLI Contract](docs/cli-contract.md)
+- [Agent Evaluation](docs/agent-evaluation.md)
+- [CLI Reference](docs/cli/prayertime-cli.md)
+- [ADR 0002: Data Sources](docs/adr/0002-data-sources.md)
 
 ## Lisans
 

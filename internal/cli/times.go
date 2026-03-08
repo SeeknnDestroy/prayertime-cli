@@ -12,7 +12,7 @@ import (
 func newTimesCmd(service *app.Service) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "times",
-		Short: "Fetch daily prayer times and countdowns",
+		Short: "Fetch daily prayer schedules and countdowns",
 	}
 
 	cmd.AddCommand(newTimesGetCmd(service))
@@ -34,10 +34,15 @@ func newTimesGetCmd(service *app.Service) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Fetch prayer times for a location and date",
+		Long: strings.TrimSpace(`
+Fetch one day's prayer schedule for a resolved place or explicit coordinates.
+
+MVP 1 is stateless, so every call must include --query PLACE or both --lat and --lon. Use --field with --quiet for one scalar value, or --json for the full structured response.
+`),
 		Example: strings.TrimSpace(`
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Istanbul --date 2026-03-07 --json
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isJSONEnabled(cmd) && field != "" {
@@ -84,13 +89,13 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
+	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve. Required unless --lat and --lon are set")
 	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
 	cmd.Flags().StringVar(&date, "date", "today", "Date in YYYY-MM-DD format or 'today'")
-	cmd.Flags().StringVar(&field, "field", "", "Return a single field such as maghrib, iftar, imsak, timezone, or method_name")
+	cmd.Flags().StringVar(&field, "field", "", "Return one field such as maghrib, iftar, yatsi, timezone, or method_name")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Emit only the selected field value")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
+	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate. Use with --lon instead of --query")
+	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate. Use with --lat instead of --query")
 	cmd.PreRun = func(cmd *cobra.Command, args []string) {
 		latitudeSet = cmd.Flags().Changed("lat")
 		longitudeSet = cmd.Flags().Changed("lon")
@@ -113,8 +118,13 @@ func newTimesCountdownCmd(service *app.Service) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "countdown",
 		Short: "Calculate seconds and minutes remaining until a target prayer",
+		Long: strings.TrimSpace(`
+Calculate remaining time until the next prayer or a named prayer target.
+
+Use --target next-prayer for generic "next ezan" questions. Canonical targets are English, while Turkish semantic aliases such as iftar, aksam, and yatsi are also accepted.
+`),
 		Example: strings.TrimSpace(`
-prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
 prayertime-cli times countdown --query Istanbul --target iftar --quiet
 prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
 `),
@@ -158,13 +168,13 @@ prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
+	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve. Required unless --lat and --lon are set")
 	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
-	cmd.Flags().StringVar(&target, "target", "", "Target prayer: next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, iftar")
+	cmd.Flags().StringVar(&target, "target", "", "Target prayer. Use next-prayer for generic countdowns; iftar and yatsi are accepted aliases")
 	cmd.Flags().StringVar(&at, "at", "", "Optional RFC3339 timestamp to evaluate countdown from")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Emit only remaining seconds")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
+	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate. Use with --lon instead of --query")
+	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate. Use with --lat instead of --query")
 	cmd.PreRun = func(cmd *cobra.Command, args []string) {
 		latitudeSet = cmd.Flags().Changed("lat")
 		longitudeSet = cmd.Flags().Changed("lon")

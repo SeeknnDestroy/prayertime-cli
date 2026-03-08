@@ -70,10 +70,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Generate docs and completions
-        run: go run ./cmd/prayertime-cli-docs
-
-      - name: Check generated artifacts
-        run: git diff --exit-code -- docs/cli docs/man completions
+        run: make docs-check
 
   build:
     runs-on: ${{ matrix.os }}

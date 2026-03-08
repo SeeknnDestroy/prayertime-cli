@@ -15,7 +15,7 @@ prayertime-cli version [flags]
 ### Options inherited from parent commands
 
 ```
-      --json   Emit JSON output to stdout
+      --json   Emit structured JSON to stdout
 ```
 
 ### SEE ALSO

@@ -10,7 +10,10 @@ prayertime-cli-times-countdown - Calculate seconds and minutes remaining until a
 
 
 .SH DESCRIPTION
-Calculate seconds and minutes remaining until a target prayer
+Calculate remaining time until the next prayer or a named prayer target.
+
+.PP
+Use --target next-prayer for generic "next ezan" questions. Canonical targets are English, while Turkish semantic aliases such as iftar, aksam, and yatsi are also accepted.
 
 
 .SH OPTIONS
@@ -27,15 +30,15 @@ Calculate seconds and minutes remaining until a target prayer
 
 .PP
 \fB--lat\fP=0
-	Latitude coordinate
+	Latitude coordinate. Use with --lon instead of --query
 
 .PP
 \fB--lon\fP=0
-	Longitude coordinate
+	Longitude coordinate. Use with --lat instead of --query
 
 .PP
 \fB--query\fP=""
-	Place name to resolve before fetching prayer times
+	Place name to resolve. Required unless --lat and --lon are set
 
 .PP
 \fB-q\fP, \fB--quiet\fP[=false]
@@ -43,17 +46,17 @@ Calculate seconds and minutes remaining until a target prayer
 
 .PP
 \fB--target\fP=""
-	Target prayer: next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, iftar
+	Target prayer. Use next-prayer for generic countdowns; iftar and yatsi are accepted aliases
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 \fB--json\fP[=false]
-	Emit JSON output to stdout
+	Emit structured JSON to stdout
 
 
 .SH EXAMPLE
 .EX
-prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
 prayertime-cli times countdown --query Istanbul --target iftar --quiet
 prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
 .EE

@@ -15,11 +15,10 @@ docs:
 	go run ./cmd/prayertime-cli-docs
 
 docs-check: docs
-	git diff --exit-code -- docs/cli docs/man completions
+	git diff --exit-code -- docs/cli docs/man completions llms-full.txt
 
 build:
 	go build ./cmd/prayertime-cli
 
 release-snapshot:
 	goreleaser release --snapshot --clean
-

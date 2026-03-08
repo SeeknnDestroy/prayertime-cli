@@ -11,7 +11,7 @@ Search locations before requesting prayer times
 ### Options inherited from parent commands
 
 ```
-      --json   Emit JSON output to stdout
+      --json   Emit structured JSON to stdout
 ```
 
 ### SEE ALSO

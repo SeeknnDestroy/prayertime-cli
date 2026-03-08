@@ -10,7 +10,10 @@ prayertime-cli-times-get - Fetch prayer times for a location and date
 
 
 .SH DESCRIPTION
-Fetch prayer times for a location and date
+Fetch one day's prayer schedule for a resolved place or explicit coordinates.
+
+.PP
+MVP 1 is stateless, so every call must include --query PLACE or both --lat and --lon. Use --field with --quiet for one scalar value, or --json for the full structured response.
 
 
 .SH OPTIONS
@@ -23,7 +26,7 @@ Fetch prayer times for a location and date
 
 .PP
 \fB--field\fP=""
-	Return a single field such as maghrib, iftar, imsak, timezone, or method_name
+	Return one field such as maghrib, iftar, yatsi, timezone, or method_name
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
@@ -31,15 +34,15 @@ Fetch prayer times for a location and date
 
 .PP
 \fB--lat\fP=0
-	Latitude coordinate
+	Latitude coordinate. Use with --lon instead of --query
 
 .PP
 \fB--lon\fP=0
-	Longitude coordinate
+	Longitude coordinate. Use with --lat instead of --query
 
 .PP
 \fB--query\fP=""
-	Place name to resolve before fetching prayer times
+	Place name to resolve. Required unless --lat and --lon are set
 
 .PP
 \fB-q\fP, \fB--quiet\fP[=false]
@@ -48,14 +51,14 @@ Fetch prayer times for a location and date
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 \fB--json\fP[=false]
-	Emit JSON output to stdout
+	Emit structured JSON to stdout
 
 
 .SH EXAMPLE
 .EX
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Istanbul --date 2026-03-07 --json
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --field iftar --quiet
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
 .EE
 
 
