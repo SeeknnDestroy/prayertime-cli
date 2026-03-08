@@ -25,9 +25,23 @@ func TestCLIGoldenOutputs(t *testing.T) {
 		wantStream string
 	}{
 		{
+			name:       "root help",
+			args:       []string{"--help"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "root_help.txt"),
+			wantExit:   app.ExitSuccess,
+			wantStream: "stdout",
+		},
+		{
 			name:       "help",
 			args:       []string{"times", "get", "--help"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_help.txt"),
+			wantExit:   app.ExitSuccess,
+			wantStream: "stdout",
+		},
+		{
+			name:       "countdown help",
+			args:       []string{"times", "countdown", "--help"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_countdown_help.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},

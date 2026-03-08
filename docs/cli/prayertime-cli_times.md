@@ -1,6 +1,6 @@
 ## prayertime-cli times
 
-Fetch daily prayer times and countdowns
+Fetch daily prayer schedules and countdowns
 
 ### Options
 
@@ -11,7 +11,7 @@ Fetch daily prayer times and countdowns
 ### Options inherited from parent commands
 
 ```
-      --json   Emit JSON output to stdout
+      --json   Emit structured JSON to stdout
 ```
 
 ### SEE ALSO

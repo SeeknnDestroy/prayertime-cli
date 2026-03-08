@@ -1,0 +1,25 @@
+Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+
+MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
+
+Usage:
+  prayertime-cli [command]
+
+Examples:
+prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
+prayertime-cli times get --query Istanbul --json
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  locations   Search locations before requesting prayer times
+  times       Fetch daily prayer schedules and countdowns
+  version     Print the CLI version
+
+Flags:
+  -h, --help      help for prayertime-cli
+      --json      Emit structured JSON to stdout
+  -v, --version   version for prayertime-cli
+
+Use "prayertime-cli [command] --help" for more information about a command.

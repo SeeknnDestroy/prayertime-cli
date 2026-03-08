@@ -1,37 +1,76 @@
 # prayertime-cli
 
-`prayertime-cli` is a CLI-first, agent-native Islamic prayer times tool built for deterministic automation, fast terminal workflows, and privacy-respecting daily use.
+`prayertime-cli` is a stateless CLI for Islamic prayer schedules and countdowns. It is built for agents, shell scripts, and direct terminal use.
 
-## Goals
+## MVP 1
 
-- Provide exact daily prayer times and countdowns through a stable CLI contract.
-- Optimize for AI agents and shell scripts with strict JSON support and predictable exit codes.
-- Start with a stateless MVP powered by Open-Meteo geocoding and AlAdhan method `13` (Diyanet).
+- Search locations with Open-Meteo geocoding.
+- Fetch daily prayer times from AlAdhan with `method=13` (Diyanet).
+- Count down to the next prayer or a named prayer.
+- Emit structured JSON on `stdout` or bare scalar values with `--quiet`.
 
-## Planned Command Surface
+## Input Model
 
-```text
-prayertime-cli locations search --query <text> [--country-code TR] [--limit 5] [--json]
-prayertime-cli times get (--query <text> | --lat <float> --lon <float>) [--country-code TR] [--date YYYY-MM-DD|today] [--json] [--field <key>] [--quiet]
-prayertime-cli times countdown (--query <text> | --lat <float> --lon <float>) --target next-prayer|fajr|sunrise|dhuhr|asr|maghrib|isha|imsak|iftar [--at RFC3339] [--json] [--quiet]
-prayertime-cli version
-```
+- MVP 1 has no persisted default location.
+- Every `times` command requires either `--query <place>` or both `--lat <float>` and `--lon <float>`.
+- `--date today` is resolved in the target location timezone.
 
-## Principles
+## Common Tasks
 
-- English commands and flags are canonical.
-- Turkish semantic aliases are accepted only for prayer identifiers and field selectors.
-- JSON responses are emitted to `stdout`; diagnostics stay on `stderr`.
-- The CLI never prompts interactively.
-
-## Development
-
-This repository uses Go 1.26 and a phased, stacked-PR workflow.
+Find candidate locations before choosing one:
 
 ```bash
-go test ./...
-go build ./cmd/prayertime-cli
+prayertime-cli locations search --query "Springfield" --country-code US --json
 ```
+
+Get today's full prayer schedule:
+
+```bash
+prayertime-cli times get --query Istanbul --json
+```
+
+Extract one value for automation or shell pipelines:
+
+```bash
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+```
+
+Ask how long until the next ezan / next prayer:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+```
+
+Ask how long until a specific prayer, including iftar:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+```
+
+Use coordinates instead of a place name:
+
+```bash
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date today --json
+```
+
+Recover from a typo or ambiguous location:
+
+```bash
+prayertime-cli locations search --query Istnbul --json
+```
+
+## Output Modes
+
+- `--json`: emit structured payloads to `stdout`. With `--json`, errors are also JSON on `stdout`.
+- `--quiet`: emit one bare scalar value. `times get` requires `--field` with `--quiet`.
+- Default human mode: readable output on `stdout`; errors and suggestions on `stderr`.
+- If you need exact process exit codes, run the compiled binary directly. `go run` wraps non-zero exits.
+
+## Aliases
+
+- Commands and flags are English-first and canonical.
+- Turkish semantic aliases are supported for prayer targets and field selectors.
+- `iftar` and `aksam` resolve to `maghrib`; `yatsi` resolves to `isha`; `ogle` resolves to `dhuhr`.
 
 ## Install
 
@@ -50,12 +89,12 @@ scoop install prayertime-cli
 go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ```
 
-## Examples
+## Build And Docs
 
 ```bash
-prayertime-cli locations search --query Istanbul --country-code TR --json
-prayertime-cli times get --query Istanbul --field iftar --quiet
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
+go test ./...
+go run ./cmd/prayertime-cli-docs
+go build ./cmd/prayertime-cli
 ```
 
 ## Exit Codes
@@ -66,6 +105,14 @@ prayertime-cli times countdown --query Istanbul --target next-prayer --json
 - `3`: not found or ambiguous input
 - `4`: network or upstream timeout
 - `5`: reserved conflict/state error
+
+## More Docs
+
+- [Agent Workflows](docs/agent-workflows.md)
+- [CLI Contract](docs/cli-contract.md)
+- [Agent Evaluation](docs/agent-evaluation.md)
+- [CLI Reference](docs/cli/prayertime-cli.md)
+- [ADR 0002: Data Sources](docs/adr/0002-data-sources.md)
 
 ## License
 

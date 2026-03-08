@@ -31,6 +31,7 @@ func main() {
 	must(root.GenZshCompletionFile(filepath.Join("completions", "_prayertime-cli")))
 	must(root.GenFishCompletionFile(filepath.Join("completions", "prayertime-cli.fish"), true))
 	must(root.GenPowerShellCompletionFile(filepath.Join("completions", "prayertime-cli.ps1")))
+	must(writeLLMSFull("llms-full.txt"))
 }
 
 func must(err error) {

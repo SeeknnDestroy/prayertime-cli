@@ -10,7 +10,10 @@ prayertime-cli-locations-search - Search for a place and return candidate coordi
 
 
 .SH DESCRIPTION
-Search for a place and return candidate coordinates
+Search for a place before requesting prayer times.
+
+.PP
+Use this command first when a user-supplied place may be ambiguous, incomplete, or misspelled.
 
 
 .SH OPTIONS
@@ -32,13 +35,14 @@ Search for a place and return candidate coordinates
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 \fB--json\fP[=false]
-	Emit JSON output to stdout
+	Emit structured JSON to stdout
 
 
 .SH EXAMPLE
 .EX
 prayertime-cli locations search --query Istanbul
-prayertime-cli locations search --query London --country-code GB --json
+prayertime-cli locations search --query Springfield --country-code US --limit 3 --json
+prayertime-cli locations search --query Istnbul --json
 .EE
 
 

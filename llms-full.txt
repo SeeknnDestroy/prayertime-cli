@@ -1,0 +1,492 @@
+# prayertime-cli
+
+> Consolidated, high-signal documentation for agent ingestion. Generated from a fixed source list by `go run ./cmd/prayertime-cli-docs`.
+
+## Included Sources
+
+- `README.md`: Fast entry point covering the CLI purpose, common tasks, output modes, aliases, and exit codes.
+- `AGENTS.md`: Compact repository briefing for coding agents, including source-of-truth rules and exact build, test, and docs commands.
+- `docs/agent-workflows.md`: Task-first workflow guide mapping natural-language intents to stable commands.
+- `docs/cli-contract.md`: Stable CLI contract for inputs, outputs, aliases, error payloads, and exit codes.
+- `docs/adr/0001-go-stack.md`: Stack decision for Go and Cobra.
+- `docs/adr/0002-data-sources.md`: Source-of-truth decision for Open-Meteo and AlAdhan method 13.
+
+## Source: `README.md`
+
+# prayertime-cli
+
+`prayertime-cli` is a stateless CLI for Islamic prayer schedules and countdowns. It is built for agents, shell scripts, and direct terminal use.
+
+## MVP 1
+
+- Search locations with Open-Meteo geocoding.
+- Fetch daily prayer times from AlAdhan with `method=13` (Diyanet).
+- Count down to the next prayer or a named prayer.
+- Emit structured JSON on `stdout` or bare scalar values with `--quiet`.
+
+## Input Model
+
+- MVP 1 has no persisted default location.
+- Every `times` command requires either `--query <place>` or both `--lat <float>` and `--lon <float>`.
+- `--date today` is resolved in the target location timezone.
+
+## Common Tasks
+
+Find candidate locations before choosing one:
+
+```bash
+prayertime-cli locations search --query "Springfield" --country-code US --json
+```
+
+Get today's full prayer schedule:
+
+```bash
+prayertime-cli times get --query Istanbul --json
+```
+
+Extract one value for automation or shell pipelines:
+
+```bash
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+```
+
+Ask how long until the next ezan / next prayer:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+```
+
+Ask how long until a specific prayer, including iftar:
+
+```bash
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+```
+
+Use coordinates instead of a place name:
+
+```bash
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date today --json
+```
+
+Recover from a typo or ambiguous location:
+
+```bash
+prayertime-cli locations search --query Istnbul --json
+```
+
+## Output Modes
+
+- `--json`: emit structured payloads to `stdout`. With `--json`, errors are also JSON on `stdout`.
+- `--quiet`: emit one bare scalar value. `times get` requires `--field` with `--quiet`.
+- Default human mode: readable output on `stdout`; errors and suggestions on `stderr`.
+- If you need exact process exit codes, run the compiled binary directly. `go run` wraps non-zero exits.
+
+## Aliases
+
+- Commands and flags are English-first and canonical.
+- Turkish semantic aliases are supported for prayer targets and field selectors.
+- `iftar` and `aksam` resolve to `maghrib`; `yatsi` resolves to `isha`; `ogle` resolves to `dhuhr`.
+
+## Install
+
+Tagged releases are published as cross-platform binaries. Package manager automation is wired for Homebrew Cask and Scoop.
+
+```bash
+# Homebrew
+brew tap SeeknnDestroy/homebrew-tap
+brew install --cask prayertime-cli
+
+# Scoop
+scoop bucket add prayertime-cli https://github.com/SeeknnDestroy/scoop-bucket
+scoop install prayertime-cli
+
+# Go
+go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
+```
+
+## Build And Docs
+
+```bash
+go test ./...
+go run ./cmd/prayertime-cli-docs
+go build ./cmd/prayertime-cli
+```
+
+## Exit Codes
+
+- `0`: success
+- `1`: internal failure
+- `2`: usage error
+- `3`: not found or ambiguous input
+- `4`: network or upstream timeout
+- `5`: reserved conflict/state error
+
+## More Docs
+
+- [Agent Workflows](docs/agent-workflows.md)
+- [CLI Contract](docs/cli-contract.md)
+- [Agent Evaluation](docs/agent-evaluation.md)
+- [CLI Reference](docs/cli/prayertime-cli.md)
+- [ADR 0002: Data Sources](docs/adr/0002-data-sources.md)
+
+## License
+
+MIT
+
+## Source: `AGENTS.md`
+
+# AGENTS.md
+
+## Project Purpose
+
+- `prayertime-cli` is a CLI-first, agent-native Islamic prayer times tool.
+- MVP 1 is stateless and limited to location search, daily prayer time lookup, and countdown queries.
+
+## Source Of Truth
+
+- Resolve place names with Open-Meteo geocoding.
+- Fetch prayer times from AlAdhan with `method=13`.
+- Treat coordinates as canonical once a place is resolved.
+
+## CLI Contract
+
+- Commands and flags are English-first.
+- Turkish support is limited to semantic aliases for prayer identifiers and field selectors.
+- MVP 1 has no persisted default location.
+- Every `times` command requires `--query <place>` or both `--lat` and `--lon`.
+- `--date today` is evaluated in the resolved location timezone.
+- Structured payloads go to `stdout`; human-readable errors and suggestions go to `stderr`.
+- With `--json`, error payloads are emitted as JSON on `stdout`.
+- Preserve the exit-code contract:
+  - `0`: success
+  - `1`: internal failure
+  - `2`: usage error
+  - `3`: not found or ambiguous input
+  - `4`: network or upstream timeout
+  - `5`: reserved conflict/state error
+- Use the compiled binary for exit-code examples. `go run` wraps non-zero process exits.
+
+## Documentation Layout
+
+- Hand-written, high-signal docs:
+  - `README.md`
+  - `README.tr.md`
+  - `docs/agent-workflows.md`
+  - `docs/cli-contract.md`
+  - `docs/agent-evaluation.md`
+  - `llms.txt`
+- Generated docs:
+  - `docs/cli/`
+  - `docs/man/`
+  - `completions/`
+  - `llms-full.txt`
+- Do not hand-edit generated docs. Regenerate them with the docs command.
+
+## Commands
+
+- Test: `go test ./...`
+- Build: `go build ./cmd/prayertime-cli`
+- Regenerate docs: `go run ./cmd/prayertime-cli-docs`
+- Verify generated docs: `make docs-check`
+
+## Repository Workflow
+
+- Work on feature branches only.
+- Keep commits atomic.
+- Prefer stacked PRs when changes separate cleanly.
+
+## Source: `docs/agent-workflows.md`
+
+# Agent Workflows
+
+> Natural-language intents mapped to stable `prayertime-cli` commands for MVP 1.
+
+## Working Model
+
+- MVP 1 is stateless. There is no saved default location.
+- Every `times` command needs `--query <place>` or both `--lat` and `--lon`.
+- Use `locations search` first when a place may be ambiguous or misspelled.
+
+## Resolve A Place
+
+Use this when the user asks for a city that may have multiple matches or an uncertain spelling.
+
+```bash
+prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
+prayertime-cli locations search --query Istnbul --json
+```
+
+Good intents:
+
+- "Which Springfield do you mean?"
+- "Search for Konya, Türkiye"
+- "I typed Istnbul, show likely matches"
+
+## Get Today's Full Schedule
+
+Use `times get` when the user wants the full daily prayer table.
+
+```bash
+prayertime-cli times get --query Istanbul --json
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --date today --json
+```
+
+Good intents:
+
+- "Bugün namaz vakitleri"
+- "Show today's prayer times in Ankara, Türkiye"
+- "Give me today's schedule for these coordinates"
+
+## Extract One Field
+
+Use `--field` with `--quiet` when the caller wants one value for synthesis, piping, or follow-on automation.
+
+```bash
+prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
+prayertime-cli times get --query Istanbul --field timezone --quiet
+prayertime-cli times get --query Istanbul --field iftar --quiet
+```
+
+Good intents:
+
+- "Yalnızca yatsı vaktini ver"
+- "What timezone is this schedule in?"
+- "Give me today's iftar time"
+
+## Generic Next-Prayer Countdown
+
+Use `next-prayer` for broad countdown questions like "how long until the next ezan?"
+
+```bash
+prayertime-cli times countdown --query Istanbul --target next-prayer --json
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target next-prayer --quiet
+```
+
+Good intents:
+
+- "Ezana kaç dakika kaldı?"
+- "How long until the next prayer?"
+- "Give me seconds until the next ezan"
+
+## Specific-Prayer Countdown
+
+Use named targets when the user asks for a specific prayer. Canonical targets are English; Turkish aliases are accepted.
+
+```bash
+prayertime-cli times countdown --query Istanbul --target asr --json
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+prayertime-cli times countdown --query Istanbul --target yatsi --json
+```
+
+Good intents:
+
+- "How long until asr?"
+- "İftara kaç saniye kaldı?"
+- "Yatsıya ne kadar kaldı?"
+
+## Evaluate From A Specific Time
+
+Use `--at` for deterministic replay, testing, or evaluation runs.
+
+```bash
+prayertime-cli times countdown --query Istanbul --target next-prayer --at 2026-03-07T18:00:00+03:00 --json
+```
+
+Good intents:
+
+- "What would the countdown have been at 18:00?"
+- "Replay this workflow against a fixed timestamp"
+
+## Recovery Patterns
+
+- Missing location input:
+  - retry with `--query <place>` or both `--lat` and `--lon`
+- Not found:
+  - run `locations search --query <text> --json`
+- Ambiguous place:
+  - run `locations search --query <text> --json` and pick coordinates or a more exact place
+- Network failure:
+  - retry with backoff; keep the same arguments
+
+## Output Mode Selection
+
+- Use `--json` for structured payloads and machine parsing.
+- Use `--quiet` only when a command already narrows to one scalar value.
+- Use default human mode for local terminal inspection.
+
+## Source: `docs/cli-contract.md`
+
+# CLI Contract
+
+> Stable agent-facing behavior for `prayertime-cli` MVP 1.
+
+## Scope
+
+- `locations search` resolves place names to candidate coordinates.
+- `times get` returns one day's prayer schedule.
+- `times countdown` returns the next-prayer or named-prayer countdown.
+- MVP 1 is stateless. There is no saved location or config fallback.
+
+## Required Inputs
+
+- `times get` and `times countdown` require one location selector:
+  - `--query <place>`
+  - or `--lat <float> --lon <float>`
+- `--query` and `--lat/--lon` are mutually exclusive.
+- `--date today` is evaluated in the resolved location timezone.
+- `times countdown --target next-prayer` is the generic "next ezan" path.
+
+## Output Modes
+
+- Default mode:
+  - success payloads are human-readable text on `stdout`
+  - errors and suggestions are written to `stderr`
+- `--json`:
+  - success payloads are JSON on `stdout`
+  - errors are JSON on `stdout`
+- `--quiet`:
+  - `times get` requires `--field`
+  - `times get --quiet` emits only the selected field value
+  - `times countdown --quiet` emits only `seconds_remaining`
+
+## Alias Rules
+
+- Commands and flags stay English-first.
+- Turkish semantic aliases are accepted for prayer targets and field selectors.
+- Common target aliases:
+  - `iftar`, `aksam` -> `maghrib`
+  - `yatsi` -> `isha`
+  - `ogle` -> `dhuhr`
+  - `gunes` -> `sunrise`
+- Common field aliases follow the same prayer mapping and resolve to `_at` fields, for example:
+  - `iftar` -> `maghrib_at`
+  - `yatsi` -> `isha_at`
+
+## Representative Success Payloads
+
+`times get --query Istanbul --json`
+
+```json
+{
+  "location_name": "Istanbul, Türkiye",
+  "latitude": 41.01384,
+  "longitude": 28.94966,
+  "timezone": "Europe/Istanbul",
+  "date": "2026-03-09",
+  "imsak_at": "2026-03-09T05:45:00+03:00",
+  "fajr_at": "2026-03-09T05:55:00+03:00",
+  "sunrise_at": "2026-03-09T07:19:00+03:00",
+  "dhuhr_at": "2026-03-09T13:20:00+03:00",
+  "asr_at": "2026-03-09T16:33:00+03:00",
+  "maghrib_at": "2026-03-09T19:11:00+03:00",
+  "sunset_at": "2026-03-09T19:11:00+03:00",
+  "isha_at": "2026-03-09T20:30:00+03:00",
+  "method_id": 13,
+  "method_name": "Diyanet İşleri Başkanlığı, Turkey (experimental)",
+  "source": "aladhan:method=13",
+  "ramadan_active": true
+}
+```
+
+`times countdown --query Istanbul --target next-prayer --json`
+
+```json
+{
+  "location_name": "Istanbul, Türkiye",
+  "latitude": 41.01384,
+  "longitude": 28.94966,
+  "timezone": "Europe/Istanbul",
+  "date": "2026-03-09",
+  "imsak_at": "2026-03-09T05:45:00+03:00",
+  "fajr_at": "2026-03-09T05:55:00+03:00",
+  "sunrise_at": "2026-03-09T07:19:00+03:00",
+  "dhuhr_at": "2026-03-09T13:20:00+03:00",
+  "asr_at": "2026-03-09T16:33:00+03:00",
+  "maghrib_at": "2026-03-09T19:11:00+03:00",
+  "sunset_at": "2026-03-09T19:11:00+03:00",
+  "isha_at": "2026-03-09T20:30:00+03:00",
+  "method_id": 13,
+  "method_name": "Diyanet İşleri Başkanlığı, Turkey (experimental)",
+  "source": "aladhan:method=13",
+  "ramadan_active": true,
+  "target": "maghrib",
+  "target_at": "2026-03-09T19:11:00+03:00",
+  "seconds_remaining": 65798,
+  "minutes_remaining": 1096
+}
+```
+
+## Error Payload
+
+`times countdown --query Istnbul --target iftar --json`
+
+```json
+{
+  "ok": false,
+  "exit_code": 3,
+  "error_type": "not_found",
+  "message": "no locations matched \"Istnbul\"",
+  "input_received": "Istnbul",
+  "suggestion": "Run 'prayertime-cli locations search --query \"Istnbul\" --json' to inspect candidates."
+}
+```
+
+## Exit Codes
+
+- `0`: success
+- `1`: internal failure
+- `2`: usage error
+- `3`: not found or ambiguous input
+- `4`: network or upstream timeout
+- `5`: reserved conflict/state error
+
+Run the compiled binary directly when you need exact exit-code behavior. `go run` wraps failures and does not preserve the tool's process exit code.
+
+## Source: `docs/adr/0001-go-stack.md`
+
+# ADR 0001: Use Go For The CLI
+
+## Status
+
+Accepted
+
+## Context
+
+The project needs a fast, cross-platform, single-binary CLI with strong standard-library networking support and low runtime overhead.
+
+## Decision
+
+Use Go 1.26 as the implementation language and Cobra for the command tree.
+
+## Consequences
+
+- Distribution is straightforward through GitHub Releases, Homebrew, and Scoop.
+- The standard library covers most of the runtime surface for MVP 1.
+- Contributors need a Go toolchain instead of Python or Rust.
+
+
+## Source: `docs/adr/0002-data-sources.md`
+
+# ADR 0002: Use Open-Meteo Plus AlAdhan Method 13
+
+## Status
+
+Accepted
+
+## Context
+
+The CLI needs globally usable location search and prayer times aligned with Turkish Diyanet expectations.
+
+## Decision
+
+- Resolve place names with Open-Meteo geocoding.
+- Fetch prayer times with AlAdhan using `method=13`.
+- Treat coordinates as canonical and avoid relying on AlAdhan city metadata.
+
+## Consequences
+
+- The CLI remains stateless and API-key free in MVP 1.
+- Upstream schema drift must be monitored with tests and scheduled contract checks.
+- Ambiguous locations need explicit user-visible recovery paths.
+
+
