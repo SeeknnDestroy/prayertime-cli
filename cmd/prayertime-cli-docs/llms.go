@@ -45,7 +45,7 @@ func writeLLMSFull(path string) error {
 	builder.WriteString("## Included Sources\n\n")
 
 	for _, source := range llmsSources {
-		builder.WriteString(fmt.Sprintf("- `%s`: %s\n", source.Path, source.Description))
+		_, _ = fmt.Fprintf(&builder, "- `%s`: %s\n", source.Path, source.Description)
 	}
 
 	builder.WriteString("\n")
@@ -56,7 +56,7 @@ func writeLLMSFull(path string) error {
 			return err
 		}
 
-		builder.WriteString(fmt.Sprintf("## Source: `%s`\n\n", source.Path))
+		_, _ = fmt.Fprintf(&builder, "## Source: `%s`\n\n", source.Path)
 		builder.Write(content)
 		if !strings.HasSuffix(builder.String(), "\n") {
 			builder.WriteString("\n")
