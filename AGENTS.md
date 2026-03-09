@@ -56,4 +56,5 @@
 
 - Work on feature branches only.
 - Keep commits atomic.
+- Use Conventional Commit style for commit messages and pull request titles: `type(scope): subject` or `type: subject`.
 - Prefer stacked PRs when changes separate cleanly.

@@ -1,0 +1,29 @@
+name: pr-title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          regex='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+$'
+
+          if [[ "$PR_TITLE" =~ $regex ]]; then
+            exit 0
+          fi
+
+          echo "Pull request titles must use Conventional Commit style."
+          echo "Examples:"
+          echo "  docs: refresh agent-native documentation"
+          echo "  feat(cli): add concise countdown view"
+          exit 1
