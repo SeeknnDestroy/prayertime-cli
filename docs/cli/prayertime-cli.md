@@ -4,28 +4,36 @@ CLI-first, agent-native Islamic prayer times tool
 
 ### Synopsis
 
-Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+CLI-first, agent-native Islamic prayer times tool.
 
-MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
+Contract:
+  - Structured payloads go to stdout.
+  - Human-readable errors and suggestions go to stderr.
+  - With --output json, errors are emitted as JSON on stdout.
 
-### Examples
+Global output modes:
+  - --output text prints human-readable output.
+  - --output json prints structured JSON.
+  - --output value is reserved for commands that expose --field selectors.
 
-```
-prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
-prayertime-cli times get --query Istanbul --json
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
-```
+Exit codes:
+  - 0 success
+  - 1 internal failure
+  - 2 usage error
+  - 3 not found or ambiguous input
+  - 4 network or upstream timeout
+  - 5 reserved conflict/state error
 
 ### Options
 
 ```
-  -h, --help   help for prayertime-cli
-      --json   Emit structured JSON to stdout
+  -h, --help            help for prayertime-cli
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO
 
 * [prayertime-cli locations](prayertime-cli_locations.md)	 - Search locations before requesting prayer times
-* [prayertime-cli times](prayertime-cli_times.md)	 - Fetch daily prayer schedules and countdowns
+* [prayertime-cli times](prayertime-cli_times.md)	 - Fetch daily prayer times and countdowns
 * [prayertime-cli version](prayertime-cli_version.md)	 - Print the CLI version
 

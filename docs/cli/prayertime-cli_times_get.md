@@ -4,9 +4,25 @@ Fetch prayer times for a location and date
 
 ### Synopsis
 
-Fetch one day's prayer schedule for a resolved place or explicit coordinates.
+Resolve a place or accept explicit coordinates, then return daily prayer times.
 
-MVP 1 is stateless, so every call must include --query PLACE or both --lat and --lon. Use --field with --quiet for one scalar value, or --json for the full structured response.
+Input rules:
+  - Provide exactly one of --query <place> or --lat <value> --lon <value>.
+  - --query may be paired with --country-code to narrow ambiguous locations.
+  - --date accepts YYYY-MM-DD or today.
+  - --date today is evaluated in the resolved location timezone.
+
+Output:
+  - --output text prints human-readable prayer times.
+  - --output json prints structured JSON.
+  - --output value prints only the selected --field value.
+  - --field accepts canonical fields such as maghrib_at, timezone, method_name, and source.
+  - With --field and --output json, the response is a single-key JSON object.
+
+View modes:
+  - concise: location_name, timezone, date, prayer times, ramadan_active
+  - detailed: concise fields plus latitude, longitude, method_id, method_name, source
+  - Default view is detailed for text and json output.
 
 ```
 prayertime-cli times get [flags]
@@ -16,8 +32,9 @@ prayertime-cli times get [flags]
 
 ```
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
+prayertime-cli times get --query Istanbul --date 2026-03-07 --output json
+prayertime-cli times get --query Istanbul --field maghrib_at --output value
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --output json
 ```
 
 ### Options
@@ -25,21 +42,21 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
 ```
       --country-code string   Optional ISO country code filter
       --date string           Date in YYYY-MM-DD format or 'today' (default "today")
-      --field string          Return one field such as maghrib, iftar, yatsi, timezone, or method_name
+      --field string          Single canonical field to return, such as maghrib_at or method_name
   -h, --help                  help for get
-      --lat float             Latitude coordinate. Use with --lon instead of --query
-      --lon float             Longitude coordinate. Use with --lat instead of --query
-      --query string          Place name to resolve. Required unless --lat and --lon are set
-  -q, --quiet                 Emit only the selected field value
+      --lat float             Latitude coordinate
+      --lon float             Longitude coordinate
+      --query string          Place name to resolve before fetching prayer times
+      --view string           Response view: concise or detailed
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO
 
-* [prayertime-cli times](prayertime-cli_times.md)	 - Fetch daily prayer schedules and countdowns
+* [prayertime-cli times](prayertime-cli_times.md)	 - Fetch daily prayer times and countdowns
 

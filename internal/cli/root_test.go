@@ -25,42 +25,63 @@ func TestCLIGoldenOutputs(t *testing.T) {
 		wantStream string
 	}{
 		{
-			name:       "root help",
+			name:       "root_help",
 			args:       []string{"--help"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "root_help.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},
 		{
-			name:       "help",
+			name:       "times_get_help",
 			args:       []string{"times", "get", "--help"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_help.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},
 		{
-			name:       "countdown help",
+			name:       "times_countdown_help",
 			args:       []string{"times", "countdown", "--help"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_countdown_help.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},
 		{
-			name:       "json",
-			args:       []string{"times", "get", "--query", "Istanbul", "--json"},
-			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_json.txt"),
+			name:       "times_get_json_detailed",
+			args:       []string{"times", "get", "--query", "Istanbul", "--output", "json"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_json_detailed.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},
 		{
-			name:       "human",
+			name:       "times_get_json_concise",
+			args:       []string{"times", "get", "--query", "Istanbul", "--output", "json", "--view", "concise"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_json_concise.txt"),
+			wantExit:   app.ExitSuccess,
+			wantStream: "stdout",
+		},
+		{
+			name:       "times_countdown_json_concise",
+			args:       []string{"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--output", "json"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_countdown_json_concise.txt"),
+			wantExit:   app.ExitSuccess,
+			wantStream: "stdout",
+		},
+		{
+			name:       "times_countdown_json_detailed",
+			args:       []string{"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--output", "json", "--view", "detailed"},
+			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_countdown_json_detailed.txt"),
+			wantExit:   app.ExitSuccess,
+			wantStream: "stdout",
+		},
+		{
+			name:       "times_get_human",
 			args:       []string{"times", "get", "--query", "Istanbul"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_get_human.txt"),
 			wantExit:   app.ExitSuccess,
 			wantStream: "stdout",
 		},
 		{
-			name:       "quiet",
+			name:       "times_countdown_quiet",
 			args:       []string{"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--quiet"},
 			wantFile:   filepath.Join("..", "..", "testdata", "golden", "times_countdown_quiet.txt"),
 			wantExit:   app.ExitSuccess,
@@ -73,12 +94,7 @@ func TestCLIGoldenOutputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
-				Resolver: cliFakeResolver{},
-				Provider: cliFakeProvider{},
-				Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
-			}, tc.args...)
-
+			stdout, stderr, exitCode := executeTestCommand(t, testDependencies(t), tc.args...)
 			if exitCode != tc.wantExit {
 				t.Fatalf("exitCode = %d, want %d", exitCode, tc.wantExit)
 			}
@@ -111,11 +127,11 @@ func TestCLIUsageErrorsHonorJSONOutput(t *testing.T) {
 	}{
 		{
 			name: "runtime validation error",
-			args: []string{"times", "get", "--json"},
+			args: []string{"times", "get", "--output", "json"},
 		},
 		{
 			name: "flag parse error",
-			args: []string{"times", "get", "--json", "--badflag"},
+			args: []string{"times", "get", "--output", "json", "--badflag"},
 		},
 	}
 
@@ -124,12 +140,7 @@ func TestCLIUsageErrorsHonorJSONOutput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
-				Resolver: cliFakeResolver{},
-				Provider: cliFakeProvider{},
-				Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
-			}, tc.args...)
-
+			stdout, stderr, exitCode := executeTestCommand(t, testDependencies(t), tc.args...)
 			if exitCode != app.ExitUsage {
 				t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitUsage)
 			}
@@ -137,11 +148,7 @@ func TestCLIUsageErrorsHonorJSONOutput(t *testing.T) {
 				t.Fatalf("stderr = %q, want empty", stderr)
 			}
 
-			var payload map[string]any
-			if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
-				t.Fatalf("Unmarshal(stdout): %v\nstdout=%q", err, stdout)
-			}
-
+			payload := decodeJSON(t, stdout)
 			want := map[string]any{
 				"ok":             false,
 				"exit_code":      float64(app.ExitUsage),
@@ -187,14 +194,14 @@ func TestCLIRejectsUnsupportedFieldBeforeProviderCall(t *testing.T) {
 	}
 }
 
-func TestCLIAcceptsRamadanActiveField(t *testing.T) {
+func TestCLIAcceptsRamadanActiveFieldWithOutputValue(t *testing.T) {
 	t.Parallel()
 
-	stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
-		Resolver: cliFakeResolver{},
-		Provider: cliFakeProvider{},
-		Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
-	}, "times", "get", "--query", "Istanbul", "--field", "ramadan_active", "--quiet")
+	stdout, stderr, exitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "get", "--query", "Istanbul", "--field", "ramadan_active", "--output", "value",
+	)
 
 	if exitCode != app.ExitSuccess {
 		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
@@ -204,6 +211,198 @@ func TestCLIAcceptsRamadanActiveField(t *testing.T) {
 	}
 	if stdout != "true\n" {
 		t.Fatalf("stdout = %q, want %q", stdout, "true\n")
+	}
+}
+
+func TestCLIQuietAliasMatchesOutputValue(t *testing.T) {
+	t.Parallel()
+
+	quietStdout, quietStderr, quietExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--quiet",
+	)
+	valueStdout, valueStderr, valueExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--field", "seconds_remaining", "--output", "value",
+	)
+
+	if quietExitCode != app.ExitSuccess || valueExitCode != app.ExitSuccess {
+		t.Fatalf("quiet/value exit codes = %d/%d, want success", quietExitCode, valueExitCode)
+	}
+	if quietStderr != "" || valueStderr != "" {
+		t.Fatalf("stderr should be empty, got quiet=%q value=%q", quietStderr, valueStderr)
+	}
+	if quietStdout != valueStdout {
+		t.Fatalf("quiet stdout = %q, value stdout = %q", quietStdout, valueStdout)
+	}
+}
+
+func TestCLIJSONAliasMatchesOutputJSON(t *testing.T) {
+	t.Parallel()
+
+	jsonAliasStdout, jsonAliasStderr, jsonAliasExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "get", "--query", "Istanbul", "--json",
+	)
+	outputStdout, outputStderr, outputExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "get", "--query", "Istanbul", "--output", "json",
+	)
+
+	if jsonAliasExitCode != app.ExitSuccess || outputExitCode != app.ExitSuccess {
+		t.Fatalf("json alias/output exit codes = %d/%d, want success", jsonAliasExitCode, outputExitCode)
+	}
+	if jsonAliasStderr != "" || outputStderr != "" {
+		t.Fatalf("stderr should be empty, got alias=%q output=%q", jsonAliasStderr, outputStderr)
+	}
+	if jsonAliasStdout != outputStdout {
+		t.Fatalf("json alias stdout = %q, output stdout = %q", jsonAliasStdout, outputStdout)
+	}
+}
+
+func TestCLIJSONErrorsIncludeDetails(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		deps    Dependencies
+		args    []string
+		wantKey string
+	}{
+		{
+			name:    "invalid field",
+			deps:    testDependencies(t),
+			args:    []string{"times", "get", "--lat", "41.01384", "--lon", "28.94966", "--field", "bogus", "--output", "json"},
+			wantKey: "valid_fields",
+		},
+		{
+			name:    "invalid target",
+			deps:    testDependencies(t),
+			args:    []string{"times", "countdown", "--query", "Istanbul", "--target", "bogus", "--output", "json"},
+			wantKey: "valid_targets",
+		},
+		{
+			name:    "missing location input",
+			deps:    testDependencies(t),
+			args:    []string{"times", "get", "--output", "json"},
+			wantKey: "required_one_of",
+		},
+		{
+			name: "ambiguous location",
+			deps: Dependencies{
+				Resolver: cliAmbiguousResolver{},
+				Provider: cliFakeProvider{},
+				Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+			},
+			args:    []string{"times", "get", "--query", "Springfield", "--output", "json"},
+			wantKey: "candidates",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			stdout, stderr, exitCode := executeTestCommand(t, tc.deps, tc.args...)
+			if exitCode == app.ExitSuccess {
+				t.Fatal("expected non-success exit code")
+			}
+			if stderr != "" {
+				t.Fatalf("stderr = %q, want empty", stderr)
+			}
+
+			payload := decodeJSON(t, stdout)
+			details, ok := payload["details"].(map[string]any)
+			if !ok {
+				t.Fatalf("details = %#v, want object", payload["details"])
+			}
+			if _, ok := details[tc.wantKey]; !ok {
+				t.Fatalf("details[%q] missing in %#v", tc.wantKey, details)
+			}
+		})
+	}
+}
+
+func TestCLIAmbiguousLocationRendersCandidatesToStderr(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(t, Dependencies{
+		Resolver: cliAmbiguousResolver{},
+		Provider: cliFakeProvider{},
+		Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+	}, "times", "get", "--query", "Springfield")
+
+	if exitCode != app.ExitNotFound {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitNotFound)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty", stdout)
+	}
+	if !strings.Contains(stderr, "Candidates:\n1. Springfield, Illinois, United States") {
+		t.Fatalf("stderr = %q, want numbered candidate list", stderr)
+	}
+	if strings.Count(stderr, "Springfield, Missouri, United States") != 1 {
+		t.Fatalf("stderr = %q, want deduped candidate list", stderr)
+	}
+}
+
+func TestCLILocationsSearchJSONIncludesDisplayName(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"locations", "search", "--query", "Istanbul", "--output", "json",
+	)
+
+	if exitCode != app.ExitSuccess {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+
+	payload := decodeJSON(t, stdout)
+	results, ok := payload["results"].([]any)
+	if !ok || len(results) == 0 {
+		t.Fatalf("results = %#v, want non-empty array", payload["results"])
+	}
+	first, ok := results[0].(map[string]any)
+	if !ok {
+		t.Fatalf("results[0] = %#v, want object", results[0])
+	}
+	if first["display_name"] != "Istanbul, Türkiye" {
+		t.Fatalf("display_name = %#v, want %q", first["display_name"], "Istanbul, Türkiye")
+	}
+}
+
+func TestCLICountdownFieldJSONReturnsSingleKeyObject(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--field", "seconds_remaining", "--output", "json",
+	)
+
+	if exitCode != app.ExitSuccess {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+
+	payload := decodeJSON(t, stdout)
+	if len(payload) != 1 {
+		t.Fatalf("len(payload) = %d, want 1", len(payload))
+	}
+	if _, ok := payload["seconds_remaining"]; !ok {
+		t.Fatalf("payload = %#v, want seconds_remaining only", payload)
 	}
 }
 
@@ -226,6 +425,26 @@ func executeTestCommand(t *testing.T, deps Dependencies, args ...string) (string
 	return stdout.String(), stderr.String(), exitCode
 }
 
+func decodeJSON(t *testing.T, value string) map[string]any {
+	t.Helper()
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		t.Fatalf("Unmarshal(%q): %v", value, err)
+	}
+	return payload
+}
+
+func testDependencies(t *testing.T) Dependencies {
+	t.Helper()
+
+	return Dependencies{
+		Resolver: cliFakeResolver{},
+		Provider: cliFakeProvider{},
+		Clock:    cliFixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, mustLocation(t, "Europe/Istanbul"))},
+	}
+}
+
 type cliFakeResolver struct{}
 
 func (cliFakeResolver) Search(ctx context.Context, query, countryCode string, limit int) ([]app.Location, error) {
@@ -238,6 +457,16 @@ func (cliFakeResolver) Search(ctx context.Context, query, countryCode string, li
 		Longitude:   28.94966,
 		Timezone:    "Europe/Istanbul",
 	}}, nil
+}
+
+type cliAmbiguousResolver struct{}
+
+func (cliAmbiguousResolver) Search(ctx context.Context, query, countryCode string, limit int) ([]app.Location, error) {
+	return []app.Location{
+		{Name: "Springfield", Country: "United States", CountryCode: "US", Admin1: "Illinois", Latitude: 39.78, Longitude: -89.64, Timezone: "America/Chicago"},
+		{Name: "Springfield", Country: "United States", CountryCode: "US", Admin1: "Missouri", Latitude: 37.20, Longitude: -93.29, Timezone: "America/Chicago"},
+		{Name: "Springfield", Country: "United States", CountryCode: "US", Admin1: "Missouri", Latitude: 37.20, Longitude: -93.29, Timezone: "America/Chicago"},
+	}, nil
 }
 
 type cliFakeProvider struct{}

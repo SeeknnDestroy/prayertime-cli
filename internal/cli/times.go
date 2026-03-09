@@ -12,7 +12,17 @@ import (
 func newTimesCmd(service *app.Service) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "times",
-		Short: "Fetch daily prayer schedules and countdowns",
+		Short: "Fetch daily prayer times and countdowns",
+		Long: strings.TrimSpace(`
+Fetch daily prayer times and countdowns for a resolved location.
+
+Contract:
+  - Provide exactly one location input strategy: --query <place> or --lat with --lon.
+  - --output text prints human-readable output to stdout.
+  - --output json prints structured JSON to stdout.
+  - --output value prints only the selected --field value.
+  - Human-readable errors go to stderr. With --output json, errors are JSON on stdout.
+`),
 	}
 
 	cmd.AddCommand(newTimesGetCmd(service))
@@ -25,43 +35,61 @@ func newTimesGetCmd(service *app.Service) *cobra.Command {
 	var countryCode string
 	var date string
 	var field string
+	var view string
 	var quiet bool
 	var latitude float64
 	var longitude float64
-	var latitudeSet bool
-	var longitudeSet bool
 
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Fetch prayer times for a location and date",
 		Long: strings.TrimSpace(`
-Fetch one day's prayer schedule for a resolved place or explicit coordinates.
+Resolve a place or accept explicit coordinates, then return daily prayer times.
 
-MVP 1 is stateless, so every call must include --query PLACE or both --lat and --lon. Use --field with --quiet for one scalar value, or --json for the full structured response.
+Input rules:
+  - Provide exactly one of --query <place> or --lat <value> --lon <value>.
+  - --query may be paired with --country-code to narrow ambiguous locations.
+  - --date accepts YYYY-MM-DD or today.
+  - --date today is evaluated in the resolved location timezone.
+
+Output:
+  - --output text prints human-readable prayer times.
+  - --output json prints structured JSON.
+  - --output value prints only the selected --field value.
+  - --field accepts canonical fields such as maghrib_at, timezone, method_name, and source.
+  - With --field and --output json, the response is a single-key JSON object.
+
+View modes:
+  - concise: location_name, timezone, date, prayer times, ramadan_active
+  - detailed: concise fields plus latitude, longitude, method_id, method_name, source
+  - Default view is detailed for text and json output.
 `),
 		Example: strings.TrimSpace(`
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
+prayertime-cli times get --query Istanbul --date 2026-03-07 --output json
+prayertime-cli times get --query Istanbul --field maghrib_at --output value
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --output json
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if isJSONEnabled(cmd) && field != "" {
-				return app.NewUsageError("--field cannot be used with --json", field, "Use --quiet with --field for bare value output or drop --json.")
-			}
-			if isJSONEnabled(cmd) && quiet {
-				return app.NewUsageError("--quiet cannot be used with --json", "", "Choose structured JSON or quiet bare output.")
-			}
-			if quiet && field == "" {
-				return app.NewUsageError("--quiet requires --field for 'times get'", "", "Provide --field to choose a single value.")
+			mode, err := resolveOutputMode(cmd, quiet)
+			if err != nil {
+				return err
 			}
 
-			resolvedField := ""
-			if field != "" {
-				var err error
-				resolvedField, err = resolveTimesField(field)
-				if err != nil {
-					return err
-				}
+			if mode == outputValue && field == "" {
+				return app.NewUsageError(
+					"--output value requires --field for times get",
+					"",
+					"Provide --field to choose a single prayer-times value.",
+				).WithDetails(app.ErrorDetails{ValidFields: app.ValidTimesFields()})
+			}
+			if err := validateTimesField(field); err != nil {
+				return err
+			}
+
+			resolvedView, err := resolveViewMode(view, viewDetailed)
+			if err != nil {
+				return err
 			}
 
 			request := app.TimesRequest{
@@ -69,10 +97,10 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
 				CountryCode: strings.ToUpper(countryCode),
 				Date:        date,
 			}
-			if latitudeSet {
+			if cmd.Flags().Changed("lat") {
 				request.Latitude = &latitude
 			}
-			if longitudeSet {
+			if cmd.Flags().Changed("lon") {
 				request.Longitude = &longitude
 			}
 
@@ -81,25 +109,22 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --date 2026-03-07 --json
 				return err
 			}
 
-			if isJSONEnabled(cmd) {
-				return writeJSON(cmd.OutOrStdout(), response)
-			}
-
-			return writeTimesHuman(cmd.OutOrStdout(), response, resolvedField, quiet)
+			return writeTimesOutput(cmd.OutOrStdout(), response, mode, resolvedView, field)
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve. Required unless --lat and --lon are set")
+	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
 	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
 	cmd.Flags().StringVar(&date, "date", "today", "Date in YYYY-MM-DD format or 'today'")
-	cmd.Flags().StringVar(&field, "field", "", "Return one field such as maghrib, iftar, yatsi, timezone, or method_name")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Emit only the selected field value")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate. Use with --lon instead of --query")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate. Use with --lat instead of --query")
-	cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		latitudeSet = cmd.Flags().Changed("lat")
-		longitudeSet = cmd.Flags().Changed("lon")
-	}
+	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as maghrib_at or method_name")
+	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Compatibility alias for --output value")
+	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
+	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
+	cmd.MarkFlagsMutuallyExclusive("query", "lat")
+	cmd.MarkFlagsMutuallyExclusive("query", "lon")
+	cmd.MarkFlagsRequiredTogether("lat", "lon")
+	_ = cmd.Flags().MarkHidden("quiet")
 
 	return cmd
 }
@@ -109,35 +134,79 @@ func newTimesCountdownCmd(service *app.Service) *cobra.Command {
 	var countryCode string
 	var target string
 	var at string
+	var field string
+	var view string
 	var quiet bool
 	var latitude float64
 	var longitude float64
-	var latitudeSet bool
-	var longitudeSet bool
 
 	cmd := &cobra.Command{
 		Use:   "countdown",
 		Short: "Calculate seconds and minutes remaining until a target prayer",
 		Long: strings.TrimSpace(`
-Calculate remaining time until the next prayer or a named prayer target.
+Resolve a place or accept explicit coordinates, then calculate the remaining time until a target prayer.
 
-Use --target next-prayer for generic "next ezan" questions. Canonical targets are English, while Turkish semantic aliases such as iftar, aksam, and yatsi are also accepted.
+Input rules:
+  - Provide exactly one of --query <place> or --lat <value> --lon <value>.
+  - --target is required.
+  - --target accepts canonical values plus Turkish aliases such as iftar, öğle, akşam, and yatsı.
+  - --at accepts an RFC3339 timestamp. If omitted, the current time is used.
+
+Output:
+  - --output text prints a human-readable countdown.
+  - --output json prints structured JSON.
+  - --output value prints only the selected --field value.
+  - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
+  - With --field and --output json, the response is a single-key JSON object.
+  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+
+View modes:
+  - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
+  - detailed: concise fields plus the full detailed prayer-times payload
+  - Default view is concise for text and json output.
 `),
 		Example: strings.TrimSpace(`
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
-prayertime-cli times countdown --query Istanbul --target iftar --quiet
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if isJSONEnabled(cmd) && quiet {
-				return app.NewUsageError("--quiet cannot be used with --json", "", "Choose structured JSON or quiet bare output.")
+			mode, err := resolveOutputMode(cmd, quiet)
+			if err != nil {
+				return err
+			}
+
+			resolvedField := field
+			if mode == outputValue && resolvedField == "" {
+				if quiet {
+					resolvedField = "seconds_remaining"
+				} else {
+					return app.NewUsageError(
+						"--output value requires --field for times countdown",
+						"",
+						"Provide --field to choose a single countdown value.",
+					).WithDetails(app.ErrorDetails{ValidFields: app.ValidCountdownFields()})
+				}
+			}
+			if err := validateCountdownField(resolvedField); err != nil {
+				return err
+			}
+
+			resolvedView, err := resolveViewMode(view, viewConcise)
+			if err != nil {
+				return err
 			}
 
 			var atValue *time.Time
 			if strings.TrimSpace(at) != "" {
 				parsed, err := time.Parse(time.RFC3339, at)
 				if err != nil {
-					return app.NewUsageError(fmt.Sprintf("invalid RFC3339 value %q", at), at, "Use --at 2026-03-07T18:00:00+03:00.")
+					return app.NewUsageError(
+						fmt.Sprintf("invalid RFC3339 value %q", at),
+						at,
+						"Use --at 2026-03-07T18:00:00+03:00.",
+					)
 				}
 				atValue = &parsed
 			}
@@ -148,10 +217,10 @@ prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2
 				Target:      target,
 				At:          atValue,
 			}
-			if latitudeSet {
+			if cmd.Flags().Changed("lat") {
 				request.Latitude = &latitude
 			}
-			if longitudeSet {
+			if cmd.Flags().Changed("lon") {
 				request.Longitude = &longitude
 			}
 
@@ -160,25 +229,24 @@ prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2
 				return err
 			}
 
-			if isJSONEnabled(cmd) {
-				return writeJSON(cmd.OutOrStdout(), response)
-			}
-
-			return writeCountdownHuman(cmd.OutOrStdout(), response, quiet)
+			return writeCountdownOutput(cmd.OutOrStdout(), response, mode, resolvedView, resolvedField)
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve. Required unless --lat and --lon are set")
+	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
 	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
-	cmd.Flags().StringVar(&target, "target", "", "Target prayer. Use next-prayer for generic countdowns; iftar and yatsi are accepted aliases")
+	cmd.Flags().StringVar(&target, "target", "", "Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar")
 	cmd.Flags().StringVar(&at, "at", "", "Optional RFC3339 timestamp to evaluate countdown from")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Emit only remaining seconds")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate. Use with --lon instead of --query")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate. Use with --lat instead of --query")
-	cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		latitudeSet = cmd.Flags().Changed("lat")
-		longitudeSet = cmd.Flags().Changed("lon")
-	}
+	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as seconds_remaining or target_at")
+	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Compatibility alias for --output value")
+	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
+	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
+	_ = cmd.MarkFlagRequired("target")
+	cmd.MarkFlagsMutuallyExclusive("query", "lat")
+	cmd.MarkFlagsMutuallyExclusive("query", "lon")
+	cmd.MarkFlagsRequiredTogether("lat", "lon")
+	_ = cmd.Flags().MarkHidden("quiet")
 
 	return cmd
 }

@@ -9,7 +9,9 @@ Asr: 2026-03-07T16:31:00+03:00
 Maghrib: 2026-03-07T19:09:00+03:00
 Sunset: 2026-03-07T19:09:00+03:00
 Isha: 2026-03-07T20:28:00+03:00
-Method: 13 Diyanet İşleri Başkanlığı, Turkey (experimental)
-Source: aladhan:method=13
 Ramadan active: true
-
+Latitude: 41.013840
+Longitude: 28.949660
+Method ID: 13
+Method: Diyanet İşleri Başkanlığı, Turkey (experimental)
+Source: aladhan:method=13

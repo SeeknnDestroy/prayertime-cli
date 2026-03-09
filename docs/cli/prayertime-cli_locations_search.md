@@ -4,9 +4,17 @@ Search for a place and return candidate coordinates
 
 ### Synopsis
 
-Search for a place before requesting prayer times.
+Resolve a place query into candidate locations and canonical coordinates.
 
-Use this command first when a user-supplied place may be ambiguous, incomplete, or misspelled.
+Input rules:
+  - --query is required.
+  - --country-code is optional and should be used to narrow ambiguous place names.
+  - --limit controls the maximum number of returned candidates.
+
+Output:
+  - --output text prints numbered candidates with coordinates and timezone.
+  - --output json prints query, count, and structured candidates including display_name.
+  - --output value is not supported for location search.
 
 ```
 prayertime-cli locations search [flags]
@@ -16,8 +24,7 @@ prayertime-cli locations search [flags]
 
 ```
 prayertime-cli locations search --query Istanbul
-prayertime-cli locations search --query Springfield --country-code US --limit 3 --json
-prayertime-cli locations search --query Istnbul --json
+prayertime-cli locations search --query London --country-code GB --output json
 ```
 
 ### Options
@@ -32,7 +39,7 @@ prayertime-cli locations search --query Istnbul --json
 ### Options inherited from parent commands
 
 ```
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO

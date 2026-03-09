@@ -61,14 +61,25 @@ func NewRootCmd(deps Dependencies) *cobra.Command {
 		Use:   "prayertime-cli",
 		Short: "CLI-first, agent-native Islamic prayer times tool",
 		Long: strings.TrimSpace(`
-Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+CLI-first, agent-native Islamic prayer times tool.
 
-MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
-`),
-		Example: strings.TrimSpace(`
-prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
-prayertime-cli times get --query Istanbul --json
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
+Contract:
+  - Structured payloads go to stdout.
+  - Human-readable errors and suggestions go to stderr.
+  - With --output json, errors are emitted as JSON on stdout.
+
+Global output modes:
+  - --output text prints human-readable output.
+  - --output json prints structured JSON.
+  - --output value is reserved for commands that expose --field selectors.
+
+Exit codes:
+  - 0 success
+  - 1 internal failure
+  - 2 usage error
+  - 3 not found or ambiguous input
+  - 4 network or upstream timeout
+  - 5 reserved conflict/state error
 `),
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -76,9 +87,11 @@ prayertime-cli times countdown --query Istanbul --target next-prayer --json
 
 	cmd.SetOut(deps.Stdout)
 	cmd.SetErr(deps.Stderr)
-	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit structured JSON to stdout")
+	cmd.PersistentFlags().String("output", string(outputText), "Output mode: text, json, or value")
+	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Compatibility alias for --output json")
+	_ = cmd.PersistentFlags().MarkHidden("json")
 	cmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
-		return app.NewUsageError(err.Error(), "", "Run 'prayertime-cli --help' for usage.")
+		return app.NewUsageError(err.Error(), "", fmt.Sprintf("Run '%s --help' for usage.", command.CommandPath()))
 	})
 	cmd.Version = version.String()
 	cmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
@@ -94,23 +107,8 @@ func isJSONEnabled(cmd *cobra.Command) bool {
 		return false
 	}
 
-	if value, err := cmd.Flags().GetBool("json"); err == nil {
-		return value
-	}
-
-	root := cmd.Root()
-	if root == nil || root == cmd {
-		return false
-	}
-
-	if value, err := root.Flags().GetBool("json"); err == nil {
-		return value
-	}
-	if value, err := root.PersistentFlags().GetBool("json"); err == nil {
-		return value
-	}
-
-	return false
+	mode, err := resolveOutputMode(cmd, false)
+	return err == nil && mode == outputJSON
 }
 
 func defaultDependencies() Dependencies {
@@ -129,7 +127,11 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print the CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if isJSONEnabled(cmd) {
+			mode, err := resolveOutputMode(cmd, false)
+			if err != nil {
+				return err
+			}
+			if mode == outputJSON {
 				return writeJSON(cmd.OutOrStdout(), map[string]string{
 					"version": version.Tag(),
 					"commit":  version.Commit(),
@@ -137,7 +139,7 @@ func newVersionCmd() *cobra.Command {
 				})
 			}
 
-			_, err := fmt.Fprintln(cmd.OutOrStdout(), version.String())
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), version.String())
 			return err
 		},
 	}

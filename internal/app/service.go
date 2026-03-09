@@ -42,10 +42,24 @@ func (s *Service) SearchLocations(ctx context.Context, query, countryCode string
 		)
 	}
 
+	serializedResults := make([]LocationSearchResult, 0, len(results))
+	for _, result := range results {
+		serializedResults = append(serializedResults, LocationSearchResult{
+			Name:        result.Name,
+			DisplayName: result.DisplayName(),
+			Country:     result.Country,
+			CountryCode: result.CountryCode,
+			Admin1:      result.Admin1,
+			Latitude:    result.Latitude,
+			Longitude:   result.Longitude,
+			Timezone:    result.Timezone,
+		})
+	}
+
 	return LocationSearchResponse{
 		Query:   query,
-		Count:   len(results),
-		Results: results,
+		Count:   len(serializedResults),
+		Results: serializedResults,
 	}, nil
 }
 
@@ -71,7 +85,7 @@ func (s *Service) GetCountdown(ctx context.Context, req CountdownRequest) (Count
 			fmt.Sprintf("unsupported target %q", req.Target),
 			req.Target,
 			"Use one of: next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, iftar.",
-		)
+		).WithDetails(ErrorDetails{ValidTargets: ValidTargets()})
 	}
 
 	location, err := s.resolveLocation(ctx, req.Query, req.CountryCode, req.Latitude, req.Longitude)
@@ -152,7 +166,9 @@ func (s *Service) resolveLocation(ctx context.Context, query, countryCode string
 			"missing location input",
 			"",
 			"Provide --query <place> or both --lat and --lon.",
-		)
+		).WithDetails(ErrorDetails{
+			RequiredOneOf: [][]string{{"query"}, {"lat", "lon"}},
+		})
 	}
 
 	if hasLat && hasLon {
@@ -194,17 +210,18 @@ func (s *Service) resolveLocation(ctx context.Context, query, countryCode string
 	if len(candidates) == 0 {
 		candidates = results
 	}
+	candidates = dedupeLocations(candidates)
 
-	suggestions := make([]string, 0, min(3, len(candidates)))
+	details := make([]LocationCandidate, 0, min(3, len(candidates)))
 	for i := 0; i < len(candidates) && i < 3; i++ {
-		suggestions = append(suggestions, candidates[i].DisplayName())
+		details = append(details, candidates[i].Candidate())
 	}
 
 	return Location{}, NewAmbiguousError(
-		fmt.Sprintf("location query %q is ambiguous: %s", query, strings.Join(suggestions, "; ")),
+		fmt.Sprintf("location query %q is ambiguous", query),
 		query,
 		fmt.Sprintf("Run 'prayertime-cli locations search --query %q --json' to inspect candidates or use --lat/--lon.", query),
-	)
+	).WithDetails(ErrorDetails{Candidates: details})
 }
 
 func (s *Service) fetchSchedule(ctx context.Context, location Location, dateInput string, asOf time.Time) (DaySchedule, error) {
@@ -348,4 +365,25 @@ func min(left, right int) int {
 		return left
 	}
 	return right
+}
+
+func dedupeLocations(locations []Location) []Location {
+	seen := make(map[string]struct{}, len(locations))
+	deduped := make([]Location, 0, len(locations))
+	for _, location := range locations {
+		key := fmt.Sprintf(
+			"%s|%s|%.6f|%.6f|%s",
+			location.DisplayName(),
+			location.CountryCode,
+			location.Latitude,
+			location.Longitude,
+			location.Timezone,
+		)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		deduped = append(deduped, location)
+	}
+	return deduped
 }

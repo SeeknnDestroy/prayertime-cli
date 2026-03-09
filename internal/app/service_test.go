@@ -123,6 +123,7 @@ func TestServiceGetTimesReturnsAmbiguousLocation(t *testing.T) {
 		results: []Location{
 			{Name: "Springfield", Country: "United States", Admin1: "Illinois", Latitude: 39.78, Longitude: -89.64, Timezone: "America/Chicago"},
 			{Name: "Springfield", Country: "United States", Admin1: "Missouri", Latitude: 37.20, Longitude: -93.29, Timezone: "America/Chicago"},
+			{Name: "Springfield", Country: "United States", Admin1: "Missouri", Latitude: 37.20, Longitude: -93.29, Timezone: "America/Chicago"},
 		},
 	}
 	service := NewService(resolver, fakeProvider{}, fixedClock{})
@@ -138,6 +139,12 @@ func TestServiceGetTimesReturnsAmbiguousLocation(t *testing.T) {
 	}
 	if cliErr.ErrorType != "ambiguous_location" {
 		t.Fatalf("ErrorType = %q, want ambiguous_location", cliErr.ErrorType)
+	}
+	if cliErr.Details == nil {
+		t.Fatal("Details = nil, want candidates")
+	}
+	if len(cliErr.Details.Candidates) != 2 {
+		t.Fatalf("len(Details.Candidates) = %d, want 2", len(cliErr.Details.Candidates))
 	}
 }
 
@@ -169,6 +176,9 @@ func TestServiceGetCountdownRejectsInvalidTargetBeforeLookup(t *testing.T) {
 	cliErr := AsCLIError(err)
 	if cliErr.ExitCode != ExitUsage {
 		t.Fatalf("ExitCode = %d, want %d", cliErr.ExitCode, ExitUsage)
+	}
+	if cliErr.Details == nil || len(cliErr.Details.ValidTargets) == 0 {
+		t.Fatal("expected valid target details")
 	}
 	if resolver.searchCalls != 0 {
 		t.Fatalf("resolver.searchCalls = %d, want 0", resolver.searchCalls)

@@ -15,7 +15,7 @@ prayertime-cli version [flags]
 ### Options inherited from parent commands
 
 ```
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO
