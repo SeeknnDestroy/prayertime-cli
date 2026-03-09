@@ -30,7 +30,8 @@ func resolveOutputMode(cmd *cobra.Command, quietAlias bool) (outputMode, error) 
 	}
 
 	mode := outputMode(strings.TrimSpace(strings.ToLower(outputValueRaw)))
-	if mode == "" {
+	outputFlagSet := cmd.Flags().Changed("output")
+	if mode == "" && !outputFlagSet {
 		mode = outputText
 	}
 
@@ -44,8 +45,12 @@ func resolveOutputMode(cmd *cobra.Command, quietAlias bool) (outputMode, error) 
 		)
 	}
 
-	jsonAlias := cmd.Flags().Changed("json")
-	if jsonAlias {
+	jsonAliasSet := cmd.Flags().Changed("json")
+	jsonAliasValue, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		return "", err
+	}
+	if jsonAliasSet && jsonAliasValue {
 		if mode != outputText && mode != outputJSON {
 			return "", app.NewUsageError(
 				"--json cannot be combined with a different --output mode",
