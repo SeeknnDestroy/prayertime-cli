@@ -1,2 +1,0 @@
-{"location_name":"Istanbul, Türkiye","latitude":41.01384,"longitude":28.94966,"timezone":"Europe/Istanbul","date":"2026-03-07","imsak_at":"2026-03-07T05:46:00+03:00","fajr_at":"2026-03-07T05:56:00+03:00","sunrise_at":"2026-03-07T07:21:00+03:00","dhuhr_at":"2026-03-07T13:20:00+03:00","asr_at":"2026-03-07T16:31:00+03:00","maghrib_at":"2026-03-07T19:09:00+03:00","sunset_at":"2026-03-07T19:09:00+03:00","isha_at":"2026-03-07T20:28:00+03:00","method_id":13,"method_name":"Diyanet İşleri Başkanlığı, Turkey (experimental)","source":"aladhan:method=13","ramadan_active":true}
-

@@ -1,6 +1,17 @@
 ## prayertime-cli times
 
-Fetch daily prayer schedules and countdowns
+Fetch daily prayer times and countdowns
+
+### Synopsis
+
+Fetch daily prayer times and countdowns for a resolved location.
+
+Contract:
+  - Provide exactly one location input strategy: --query <place> or --lat with --lon.
+  - --output text prints human-readable output to stdout.
+  - --output json prints structured JSON to stdout.
+  - --output value prints only the selected --field value.
+  - Human-readable errors go to stderr. With --output json, errors are JSON on stdout.
 
 ### Options
 
@@ -11,7 +22,7 @@ Fetch daily prayer schedules and countdowns
 ### Options inherited from parent commands
 
 ```
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO

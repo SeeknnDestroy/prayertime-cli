@@ -2,6 +2,17 @@
 
 Search locations before requesting prayer times
 
+### Synopsis
+
+Search and inspect candidate places before requesting prayer times.
+
+Contract:
+  - --query is required.
+  - Use --country-code to narrow ambiguous place names.
+  - --output text prints numbered candidates for humans.
+  - --output json prints structured candidates with display_name, coordinates, and timezone.
+  - Success payloads go to stdout. Errors go to stderr unless --output json is used.
+
 ### Options
 
 ```
@@ -11,7 +22,7 @@ Search locations before requesting prayer times
 ### Options inherited from parent commands
 
 ```
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")
 ```
 
 ### SEE ALSO

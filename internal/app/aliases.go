@@ -38,7 +38,19 @@ var targetAliases = map[string]string{
 	"yatsi":       "isha",
 }
 
-var fieldAliases = map[string]string{
+var canonicalTargets = []string{
+	"next-prayer",
+	"imsak",
+	"fajr",
+	"sunrise",
+	"dhuhr",
+	"asr",
+	"maghrib",
+	"sunset",
+	"isha",
+}
+
+var timesFieldAliases = map[string]string{
 	"location-name":  "location_name",
 	"location_name":  "location_name",
 	"latitude":       "latitude",
@@ -84,12 +96,95 @@ var fieldAliases = map[string]string{
 	"ramadan-active": "ramadan_active",
 }
 
+var canonicalTimesFields = []string{
+	"location_name",
+	"latitude",
+	"longitude",
+	"timezone",
+	"date",
+	"imsak_at",
+	"fajr_at",
+	"sunrise_at",
+	"dhuhr_at",
+	"asr_at",
+	"maghrib_at",
+	"sunset_at",
+	"isha_at",
+	"method_id",
+	"method_name",
+	"source",
+	"ramadan_active",
+}
+
+var countdownFieldAliases = cloneAliases(timesFieldAliases)
+
+var canonicalCountdownFields = []string{
+	"location_name",
+	"latitude",
+	"longitude",
+	"timezone",
+	"date",
+	"imsak_at",
+	"fajr_at",
+	"sunrise_at",
+	"dhuhr_at",
+	"asr_at",
+	"maghrib_at",
+	"sunset_at",
+	"isha_at",
+	"method_id",
+	"method_name",
+	"source",
+	"ramadan_active",
+	"target",
+	"target_at",
+	"seconds_remaining",
+	"minutes_remaining",
+}
+
+func init() {
+	countdownFieldAliases["target"] = "target"
+	countdownFieldAliases["target-at"] = "target_at"
+	countdownFieldAliases["target_at"] = "target_at"
+	countdownFieldAliases["seconds"] = "seconds_remaining"
+	countdownFieldAliases["seconds-remaining"] = "seconds_remaining"
+	countdownFieldAliases["seconds_remaining"] = "seconds_remaining"
+	countdownFieldAliases["minutes"] = "minutes_remaining"
+	countdownFieldAliases["minutes-remaining"] = "minutes_remaining"
+	countdownFieldAliases["minutes_remaining"] = "minutes_remaining"
+}
+
 func NormalizeTarget(input string) (string, bool) {
 	value, ok := targetAliases[normalizeToken(input)]
 	return value, ok
 }
 
-func NormalizeField(input string) (string, bool) {
-	value, ok := fieldAliases[normalizeToken(input)]
+func NormalizeTimesField(input string) (string, bool) {
+	value, ok := timesFieldAliases[normalizeToken(input)]
 	return value, ok
+}
+
+func NormalizeCountdownField(input string) (string, bool) {
+	value, ok := countdownFieldAliases[normalizeToken(input)]
+	return value, ok
+}
+
+func ValidTargets() []string {
+	return append([]string(nil), canonicalTargets...)
+}
+
+func ValidTimesFields() []string {
+	return append([]string(nil), canonicalTimesFields...)
+}
+
+func ValidCountdownFields() []string {
+	return append([]string(nil), canonicalCountdownFields...)
+}
+
+func cloneAliases(input map[string]string) map[string]string {
+	cloned := make(map[string]string, len(input))
+	for key, value := range input {
+		cloned[key] = value
+	}
+	return cloned
 }

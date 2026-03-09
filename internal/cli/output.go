@@ -9,6 +9,12 @@ import (
 	"github.com/SeeknnDestroy/prayertime-cli/internal/app"
 )
 
+type fieldEntry struct {
+	Key   string
+	Label string
+	Value any
+}
+
 func renderCommandError(stdout io.Writer, stderr io.Writer, useJSON bool, err error) int {
 	cliErr := app.AsCLIError(err)
 	if useJSON {
@@ -20,11 +26,28 @@ func renderCommandError(stdout io.Writer, stderr io.Writer, useJSON bool, err er
 			"input_received": cliErr.InputReceived,
 			"suggestion":     cliErr.Suggestion,
 		}
+		if cliErr.Details != nil {
+			payload["details"] = cliErr.Details
+		}
 		_ = writeJSON(stdout, payload)
 		return cliErr.ExitCode
 	}
 
 	_, _ = fmt.Fprintln(stderr, cliErr.Message)
+	if cliErr.Details != nil && len(cliErr.Details.Candidates) > 0 {
+		_, _ = fmt.Fprintln(stderr, "Candidates:")
+		for index, candidate := range cliErr.Details.Candidates {
+			_, _ = fmt.Fprintf(
+				stderr,
+				"%d. %s [%0.6f, %0.6f] %s\n",
+				index+1,
+				candidate.DisplayName,
+				candidate.Latitude,
+				candidate.Longitude,
+				candidate.Timezone,
+			)
+		}
+	}
 	if cliErr.Suggestion != "" {
 		_, _ = fmt.Fprintln(stderr, cliErr.Suggestion)
 	}
@@ -36,101 +59,231 @@ func writeJSON(out io.Writer, payload any) error {
 	return encoder.Encode(payload)
 }
 
-func writeTimesHuman(out io.Writer, response app.TimesResponse, field string, quiet bool) error {
+func writeTimesOutput(out io.Writer, response app.TimesResponse, mode outputMode, view viewMode, field string) error {
 	if field != "" {
-		value, resolvedField, err := selectTimesField(response, field)
-		if err != nil {
-			return err
-		}
-		if quiet {
-			_, err = fmt.Fprintln(out, value)
-			return err
-		}
-		_, err = fmt.Fprintf(out, "%s: %s\n", resolvedField, value)
+		entry, err := timesFieldEntry(response, field)
+		return writeFieldOutput(out, mode, entry, err)
+	}
+
+	switch mode {
+	case outputJSON:
+		return writeJSON(out, entriesToMap(timesEntries(response, view)))
+	case outputText:
+		return writeTextEntries(out, timesEntries(response, view))
+	default:
+		return app.NewUsageError(
+			fmt.Sprintf("unsupported output mode %q for times get", mode),
+			string(mode),
+			"Use --output text, --output json, or --output value with --field.",
+		)
+	}
+}
+
+func writeCountdownOutput(out io.Writer, response app.CountdownResponse, mode outputMode, view viewMode, field string) error {
+	if field != "" {
+		entry, err := countdownFieldEntry(response, field)
+		return writeFieldOutput(out, mode, entry, err)
+	}
+
+	switch mode {
+	case outputJSON:
+		return writeJSON(out, entriesToMap(countdownEntries(response, view)))
+	case outputText:
+		return writeTextEntries(out, countdownEntries(response, view))
+	default:
+		return app.NewUsageError(
+			fmt.Sprintf("unsupported output mode %q for times countdown", mode),
+			string(mode),
+			"Use --output text, --output json, or --output value with --field.",
+		)
+	}
+}
+
+func writeFieldOutput(out io.Writer, mode outputMode, entry fieldEntry, err error) error {
+	if err != nil {
 		return err
 	}
 
-	_, err := fmt.Fprintf(
-		out,
-		"Location: %s\nTimezone: %s\nDate: %s\nImsak: %s\nFajr: %s\nSunrise: %s\nDhuhr: %s\nAsr: %s\nMaghrib: %s\nSunset: %s\nIsha: %s\nMethod: %d %s\nSource: %s\nRamadan active: %t\n",
-		response.LocationName,
-		response.Timezone,
-		response.Date,
-		response.ImsakAt,
-		response.FajrAt,
-		response.SunriseAt,
-		response.DhuhrAt,
-		response.AsrAt,
-		response.MaghribAt,
-		response.SunsetAt,
-		response.IshaAt,
-		response.MethodID,
-		response.MethodName,
-		response.Source,
-		response.RamadanActive,
-	)
-	return err
-}
-
-func writeCountdownHuman(out io.Writer, response app.CountdownResponse, quiet bool) error {
-	if quiet {
-		_, err := fmt.Fprintln(out, response.SecondsRemaining)
+	switch mode {
+	case outputText:
+		_, err = fmt.Fprintf(out, "%s: %s\n", entry.Key, stringifyValue(entry.Value))
 		return err
+	case outputJSON:
+		return writeJSON(out, map[string]any{entry.Key: entry.Value})
+	case outputValue:
+		_, err = fmt.Fprintln(out, stringifyValue(entry.Value))
+		return err
+	default:
+		return app.NewUsageError(
+			fmt.Sprintf("unsupported output mode %q", mode),
+			string(mode),
+			"Use --output text, --output json, or --output value.",
+		)
 	}
-
-	_, err := fmt.Fprintf(
-		out,
-		"Location: %s\nTimezone: %s\nDate: %s\nTarget: %s\nTarget at: %s\nSeconds remaining: %d\nMinutes remaining: %d\nRamadan active: %t\n",
-		response.LocationName,
-		response.Timezone,
-		response.Date,
-		response.Target,
-		response.TargetAt,
-		response.SecondsRemaining,
-		response.MinutesRemaining,
-		response.RamadanActive,
-	)
-	return err
 }
 
-func resolveTimesField(field string) (string, error) {
-	resolved, ok := app.NormalizeField(field)
+func writeTextEntries(out io.Writer, entries []fieldEntry) error {
+	for _, entry := range entries {
+		if _, err := fmt.Fprintf(out, "%s: %s\n", entry.Label, stringifyValue(entry.Value)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func entriesToMap(entries []fieldEntry) map[string]any {
+	payload := make(map[string]any, len(entries))
+	for _, entry := range entries {
+		payload[entry.Key] = entry.Value
+	}
+	return payload
+}
+
+func timesFieldEntry(response app.TimesResponse, field string) (fieldEntry, error) {
+	resolved, ok := app.NormalizeTimesField(field)
 	if !ok {
-		return "", app.NewUsageError(
+		return fieldEntry{}, app.NewUsageError(
 			fmt.Sprintf("unsupported field %q", field),
 			field,
-			"Use fields like imsak, fajr, iftar, timezone, method_name, or source.",
+			"Use a canonical prayer-times field such as maghrib_at, timezone, method_name, or source.",
+		).WithDetails(app.ErrorDetails{ValidFields: app.ValidTimesFields()})
+	}
+
+	for _, entry := range timesEntries(response, viewDetailed) {
+		if entry.Key == resolved {
+			return entry, nil
+		}
+	}
+
+	return fieldEntry{}, app.NewInternalError("failed to resolve field from response", resolved, "", nil)
+}
+
+func countdownFieldEntry(response app.CountdownResponse, field string) (fieldEntry, error) {
+	resolved, ok := app.NormalizeCountdownField(field)
+	if !ok {
+		return fieldEntry{}, app.NewUsageError(
+			fmt.Sprintf("unsupported field %q", field),
+			field,
+			"Use a canonical countdown field such as seconds_remaining, target_at, maghrib_at, or method_name.",
+		).WithDetails(app.ErrorDetails{ValidFields: app.ValidCountdownFields()})
+	}
+
+	for _, entry := range countdownEntries(response, viewDetailed) {
+		if entry.Key == resolved {
+			return entry, nil
+		}
+	}
+
+	return fieldEntry{}, app.NewInternalError("failed to resolve field from response", resolved, "", nil)
+}
+
+func validateTimesField(field string) error {
+	if field == "" {
+		return nil
+	}
+
+	if _, ok := app.NormalizeTimesField(field); ok {
+		return nil
+	}
+
+	return app.NewUsageError(
+		fmt.Sprintf("unsupported field %q", field),
+		field,
+		"Use a canonical prayer-times field such as maghrib_at, timezone, method_name, or source.",
+	).WithDetails(app.ErrorDetails{ValidFields: app.ValidTimesFields()})
+}
+
+func validateCountdownField(field string) error {
+	if field == "" {
+		return nil
+	}
+
+	if _, ok := app.NormalizeCountdownField(field); ok {
+		return nil
+	}
+
+	return app.NewUsageError(
+		fmt.Sprintf("unsupported field %q", field),
+		field,
+		"Use a canonical countdown field such as seconds_remaining, target_at, maghrib_at, or method_name.",
+	).WithDetails(app.ErrorDetails{ValidFields: app.ValidCountdownFields()})
+}
+
+func timesEntries(response app.TimesResponse, view viewMode) []fieldEntry {
+	entries := []fieldEntry{
+		{Key: "location_name", Label: "Location", Value: response.LocationName},
+		{Key: "timezone", Label: "Timezone", Value: response.Timezone},
+		{Key: "date", Label: "Date", Value: response.Date},
+		{Key: "imsak_at", Label: "Imsak", Value: response.ImsakAt},
+		{Key: "fajr_at", Label: "Fajr", Value: response.FajrAt},
+		{Key: "sunrise_at", Label: "Sunrise", Value: response.SunriseAt},
+		{Key: "dhuhr_at", Label: "Dhuhr", Value: response.DhuhrAt},
+		{Key: "asr_at", Label: "Asr", Value: response.AsrAt},
+		{Key: "maghrib_at", Label: "Maghrib", Value: response.MaghribAt},
+		{Key: "sunset_at", Label: "Sunset", Value: response.SunsetAt},
+		{Key: "isha_at", Label: "Isha", Value: response.IshaAt},
+		{Key: "ramadan_active", Label: "Ramadan active", Value: response.RamadanActive},
+	}
+
+	if view == viewDetailed {
+		entries = append(entries,
+			fieldEntry{Key: "latitude", Label: "Latitude", Value: response.Latitude},
+			fieldEntry{Key: "longitude", Label: "Longitude", Value: response.Longitude},
+			fieldEntry{Key: "method_id", Label: "Method ID", Value: response.MethodID},
+			fieldEntry{Key: "method_name", Label: "Method", Value: response.MethodName},
+			fieldEntry{Key: "source", Label: "Source", Value: response.Source},
 		)
 	}
 
-	return resolved, nil
+	return entries
 }
 
-func selectTimesField(response app.TimesResponse, field string) (string, string, error) {
-	resolved, err := resolveTimesField(field)
-	if err != nil {
-		return "", "", err
+func countdownEntries(response app.CountdownResponse, view viewMode) []fieldEntry {
+	entries := []fieldEntry{
+		{Key: "location_name", Label: "Location", Value: response.LocationName},
+		{Key: "timezone", Label: "Timezone", Value: response.Timezone},
+		{Key: "date", Label: "Date", Value: response.Date},
+		{Key: "target", Label: "Target", Value: response.Target},
+		{Key: "target_at", Label: "Target at", Value: response.TargetAt},
+		{Key: "seconds_remaining", Label: "Seconds remaining", Value: response.SecondsRemaining},
+		{Key: "minutes_remaining", Label: "Minutes remaining", Value: response.MinutesRemaining},
 	}
 
-	values := map[string]string{
-		"location_name":  response.LocationName,
-		"latitude":       strconv.FormatFloat(response.Latitude, 'f', 6, 64),
-		"longitude":      strconv.FormatFloat(response.Longitude, 'f', 6, 64),
-		"timezone":       response.Timezone,
-		"date":           response.Date,
-		"imsak_at":       response.ImsakAt,
-		"fajr_at":        response.FajrAt,
-		"sunrise_at":     response.SunriseAt,
-		"dhuhr_at":       response.DhuhrAt,
-		"asr_at":         response.AsrAt,
-		"maghrib_at":     response.MaghribAt,
-		"sunset_at":      response.SunsetAt,
-		"isha_at":        response.IshaAt,
-		"method_id":      strconv.Itoa(response.MethodID),
-		"method_name":    response.MethodName,
-		"source":         response.Source,
-		"ramadan_active": strconv.FormatBool(response.RamadanActive),
+	if view == viewDetailed {
+		entries = append(entries,
+			fieldEntry{Key: "imsak_at", Label: "Imsak", Value: response.ImsakAt},
+			fieldEntry{Key: "fajr_at", Label: "Fajr", Value: response.FajrAt},
+			fieldEntry{Key: "sunrise_at", Label: "Sunrise", Value: response.SunriseAt},
+			fieldEntry{Key: "dhuhr_at", Label: "Dhuhr", Value: response.DhuhrAt},
+			fieldEntry{Key: "asr_at", Label: "Asr", Value: response.AsrAt},
+			fieldEntry{Key: "maghrib_at", Label: "Maghrib", Value: response.MaghribAt},
+			fieldEntry{Key: "sunset_at", Label: "Sunset", Value: response.SunsetAt},
+			fieldEntry{Key: "isha_at", Label: "Isha", Value: response.IshaAt},
+			fieldEntry{Key: "ramadan_active", Label: "Ramadan active", Value: response.RamadanActive},
+			fieldEntry{Key: "latitude", Label: "Latitude", Value: response.Latitude},
+			fieldEntry{Key: "longitude", Label: "Longitude", Value: response.Longitude},
+			fieldEntry{Key: "method_id", Label: "Method ID", Value: response.MethodID},
+			fieldEntry{Key: "method_name", Label: "Method", Value: response.MethodName},
+			fieldEntry{Key: "source", Label: "Source", Value: response.Source},
+		)
 	}
 
-	return values[resolved], resolved, nil
+	return entries
+}
+
+func stringifyValue(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	case float64:
+		return strconv.FormatFloat(typed, 'f', 6, 64)
+	case int:
+		return strconv.Itoa(typed)
+	case int64:
+		return strconv.FormatInt(typed, 10)
+	case bool:
+		return strconv.FormatBool(typed)
+	default:
+		return fmt.Sprint(typed)
+	}
 }

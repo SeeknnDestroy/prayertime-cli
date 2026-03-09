@@ -26,7 +26,7 @@ func TestNormalizeTargetAliases(t *testing.T) {
 	}
 }
 
-func TestNormalizeFieldAliases(t *testing.T) {
+func TestNormalizeTimesFieldAliases(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]string{
@@ -38,12 +38,34 @@ func TestNormalizeFieldAliases(t *testing.T) {
 	}
 
 	for input, want := range cases {
-		got, ok := NormalizeField(input)
+		got, ok := NormalizeTimesField(input)
 		if !ok {
 			t.Fatalf("expected field alias %q to resolve", input)
 		}
 		if got != want {
-			t.Fatalf("NormalizeField(%q) = %q, want %q", input, got, want)
+			t.Fatalf("NormalizeTimesField(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestNormalizeCountdownFieldAliases(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]string{
+		"seconds":           "seconds_remaining",
+		"seconds_remaining": "seconds_remaining",
+		"minutes-remaining": "minutes_remaining",
+		"target-at":         "target_at",
+		"maghrib":           "maghrib_at",
+	}
+
+	for input, want := range cases {
+		got, ok := NormalizeCountdownField(input)
+		if !ok {
+			t.Fatalf("expected field alias %q to resolve", input)
+		}
+		if got != want {
+			t.Fatalf("NormalizeCountdownField(%q) = %q, want %q", input, got, want)
 		}
 	}
 }

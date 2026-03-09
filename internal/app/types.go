@@ -28,14 +28,35 @@ func (l Location) DisplayName() string {
 	return strings.Join(parts, ", ")
 }
 
+func (l Location) Candidate() LocationCandidate {
+	return LocationCandidate{
+		DisplayName: l.DisplayName(),
+		CountryCode: l.CountryCode,
+		Latitude:    l.Latitude,
+		Longitude:   l.Longitude,
+		Timezone:    l.Timezone,
+	}
+}
+
 func CoordinatesName(lat, lon float64) string {
 	return fmt.Sprintf("%.6f, %.6f", lat, lon)
 }
 
+type LocationSearchResult struct {
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	Country     string  `json:"country"`
+	CountryCode string  `json:"country_code"`
+	Admin1      string  `json:"admin1,omitempty"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Timezone    string  `json:"timezone"`
+}
+
 type LocationSearchResponse struct {
-	Query   string     `json:"query"`
-	Count   int        `json:"count"`
-	Results []Location `json:"results"`
+	Query   string                 `json:"query"`
+	Count   int                    `json:"count"`
+	Results []LocationSearchResult `json:"results"`
 }
 
 type TimesRequest struct {

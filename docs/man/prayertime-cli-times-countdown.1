@@ -10,10 +10,29 @@ prayertime-cli-times-countdown - Calculate seconds and minutes remaining until a
 
 
 .SH DESCRIPTION
-Calculate remaining time until the next prayer or a named prayer target.
+Resolve a place or accept explicit coordinates, then calculate the remaining time until a target prayer.
 
 .PP
-Use --target next-prayer for generic "next ezan" questions. Canonical targets are English, while Turkish semantic aliases such as iftar, aksam, and yatsi are also accepted.
+Input rules:
+  - Provide exactly one of --query  or --lat  --lon \&.
+  - --target is required.
+  - --target accepts canonical values plus Turkish aliases such as iftar, öğle, akşam, and yatsı.
+  - --at accepts an RFC3339 timestamp. If omitted, the current time is used.
+
+.PP
+Output:
+  - --output text prints a human-readable countdown.
+  - --output json prints structured JSON.
+  - --output value prints only the selected --field value.
+  - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
+  - With --field and --output json, the response is a single-key JSON object.
+  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+
+.PP
+View modes:
+  - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
+  - detailed: concise fields plus the full detailed prayer-times payload
+  - Default view is concise for text and json output.
 
 
 .SH OPTIONS
@@ -25,40 +44,45 @@ Use --target next-prayer for generic "next ezan" questions. Canonical targets ar
 	Optional ISO country code filter
 
 .PP
+\fB--field\fP=""
+	Single canonical field to return, such as seconds_remaining or target_at
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
 	help for countdown
 
 .PP
 \fB--lat\fP=0
-	Latitude coordinate. Use with --lon instead of --query
+	Latitude coordinate
 
 .PP
 \fB--lon\fP=0
-	Longitude coordinate. Use with --lat instead of --query
+	Longitude coordinate
 
 .PP
 \fB--query\fP=""
-	Place name to resolve. Required unless --lat and --lon are set
-
-.PP
-\fB-q\fP, \fB--quiet\fP[=false]
-	Emit only remaining seconds
+	Place name to resolve before fetching prayer times
 
 .PP
 \fB--target\fP=""
-	Target prayer. Use next-prayer for generic countdowns; iftar and yatsi are accepted aliases
+	Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar
+
+.PP
+\fB--view\fP=""
+	Response view: concise or detailed
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
-\fB--json\fP[=false]
-	Emit structured JSON to stdout
+\fB--output\fP="text"
+	Output mode: text, json, or value
 
 
 .SH EXAMPLE
 .EX
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
-prayertime-cli times countdown --query Istanbul --target iftar --quiet
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
 .EE
 
 

@@ -1,0 +1,1 @@
+{"date":"2026-03-07","location_name":"Istanbul, Türkiye","minutes_remaining":69,"seconds_remaining":4140,"target":"maghrib","target_at":"2026-03-07T19:09:00+03:00","timezone":"Europe/Istanbul"}

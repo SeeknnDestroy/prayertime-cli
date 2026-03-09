@@ -17,7 +17,23 @@ type CLIError struct {
 	Message       string
 	InputReceived string
 	Suggestion    string
+	Details       *ErrorDetails
 	Cause         error
+}
+
+type ErrorDetails struct {
+	Candidates    []LocationCandidate `json:"candidates,omitempty"`
+	ValidFields   []string            `json:"valid_fields,omitempty"`
+	ValidTargets  []string            `json:"valid_targets,omitempty"`
+	RequiredOneOf [][]string          `json:"required_one_of,omitempty"`
+}
+
+type LocationCandidate struct {
+	DisplayName string  `json:"display_name"`
+	CountryCode string  `json:"country_code"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Timezone    string  `json:"timezone"`
 }
 
 func (e *CLIError) Error() string {
@@ -34,6 +50,15 @@ func (e *CLIError) Unwrap() error {
 	}
 
 	return e.Cause
+}
+
+func (e *CLIError) WithDetails(details ErrorDetails) *CLIError {
+	if e == nil {
+		return nil
+	}
+
+	e.Details = &details
+	return e
 }
 
 func AsCLIError(err error) *CLIError {

@@ -1,24 +1,43 @@
-Calculate remaining time until the next prayer or a named prayer target.
+Resolve a place or accept explicit coordinates, then calculate the remaining time until a target prayer.
 
-Use --target next-prayer for generic "next ezan" questions. Canonical targets are English, while Turkish semantic aliases such as iftar, aksam, and yatsi are also accepted.
+Input rules:
+  - Provide exactly one of --query <place> or --lat <value> --lon <value>.
+  - --target is required.
+  - --target accepts canonical values plus Turkish aliases such as iftar, öğle, akşam, and yatsı.
+  - --at accepts an RFC3339 timestamp. If omitted, the current time is used.
+
+Output:
+  - --output text prints a human-readable countdown.
+  - --output json prints structured JSON.
+  - --output value prints only the selected --field value.
+  - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
+  - With --field and --output json, the response is a single-key JSON object.
+  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+
+View modes:
+  - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
+  - detailed: concise fields plus the full detailed prayer-times payload
+  - Default view is concise for text and json output.
 
 Usage:
   prayertime-cli times countdown [flags]
 
 Examples:
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
-prayertime-cli times countdown --query Istanbul --target iftar --quiet
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target next-prayer
+prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
 
 Flags:
       --at string             Optional RFC3339 timestamp to evaluate countdown from
       --country-code string   Optional ISO country code filter
+      --field string          Single canonical field to return, such as seconds_remaining or target_at
   -h, --help                  help for countdown
-      --lat float             Latitude coordinate. Use with --lon instead of --query
-      --lon float             Longitude coordinate. Use with --lat instead of --query
-      --query string          Place name to resolve. Required unless --lat and --lon are set
-  -q, --quiet                 Emit only remaining seconds
-      --target string         Target prayer. Use next-prayer for generic countdowns; iftar and yatsi are accepted aliases
+      --lat float             Latitude coordinate
+      --lon float             Longitude coordinate
+      --query string          Place name to resolve before fetching prayer times
+      --target string         Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar
+      --view string           Response view: concise or detailed
 
 Global Flags:
-      --json   Emit structured JSON to stdout
+      --output string   Output mode: text, json, or value (default "text")

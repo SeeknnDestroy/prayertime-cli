@@ -10,10 +10,28 @@ prayertime-cli - CLI-first, agent-native Islamic prayer times tool
 
 
 .SH DESCRIPTION
-Stateless prayer-time CLI for agents, shell scripts, and direct terminal use.
+CLI-first, agent-native Islamic prayer times tool.
 
 .PP
-MVP 1 has no persisted default location. Every times query must provide --query PLACE or both --lat and --lon.
+Contract:
+  - Structured payloads go to stdout.
+  - Human-readable errors and suggestions go to stderr.
+  - With --output json, errors are emitted as JSON on stdout.
+
+.PP
+Global output modes:
+  - --output text prints human-readable output.
+  - --output json prints structured JSON.
+  - --output value is reserved for commands that expose --field selectors.
+
+.PP
+Exit codes:
+  - 0 success
+  - 1 internal failure
+  - 2 usage error
+  - 3 not found or ambiguous input
+  - 4 network or upstream timeout
+  - 5 reserved conflict/state error
 
 
 .SH OPTIONS
@@ -21,16 +39,8 @@ MVP 1 has no persisted default location. Every times query must provide --query 
 	help for prayertime-cli
 
 .PP
-\fB--json\fP[=false]
-	Emit structured JSON to stdout
-
-
-.SH EXAMPLE
-.EX
-prayertime-cli locations search --query "Springfield" --country-code US --limit 3 --json
-prayertime-cli times get --query Istanbul --json
-prayertime-cli times countdown --query Istanbul --target next-prayer --json
-.EE
+\fB--output\fP="text"
+	Output mode: text, json, or value
 
 
 .SH SEE ALSO

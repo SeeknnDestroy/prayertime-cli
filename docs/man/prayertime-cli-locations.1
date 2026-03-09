@@ -10,7 +10,15 @@ prayertime-cli-locations - Search locations before requesting prayer times
 
 
 .SH DESCRIPTION
-Search locations before requesting prayer times
+Search and inspect candidate places before requesting prayer times.
+
+.PP
+Contract:
+  - --query is required.
+  - Use --country-code to narrow ambiguous place names.
+  - --output text prints numbered candidates for humans.
+  - --output json prints structured candidates with display_name, coordinates, and timezone.
+  - Success payloads go to stdout. Errors go to stderr unless --output json is used.
 
 
 .SH OPTIONS
@@ -19,8 +27,8 @@ Search locations before requesting prayer times
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
-\fB--json\fP[=false]
-	Emit structured JSON to stdout
+\fB--output\fP="text"
+	Output mode: text, json, or value
 
 
 .SH SEE ALSO

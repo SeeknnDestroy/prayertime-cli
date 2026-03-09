@@ -2,7 +2,7 @@
 .TH "prayertime-cli" "1" "Mar 2026" "prayertime-cli" ""
 
 .SH NAME
-prayertime-cli-times - Fetch daily prayer schedules and countdowns
+prayertime-cli-times - Fetch daily prayer times and countdowns
 
 
 .SH SYNOPSIS
@@ -10,7 +10,15 @@ prayertime-cli-times - Fetch daily prayer schedules and countdowns
 
 
 .SH DESCRIPTION
-Fetch daily prayer schedules and countdowns
+Fetch daily prayer times and countdowns for a resolved location.
+
+.PP
+Contract:
+  - Provide exactly one location input strategy: --query  or --lat with --lon.
+  - --output text prints human-readable output to stdout.
+  - --output json prints structured JSON to stdout.
+  - --output value prints only the selected --field value.
+  - Human-readable errors go to stderr. With --output json, errors are JSON on stdout.
 
 
 .SH OPTIONS
@@ -19,8 +27,8 @@ Fetch daily prayer schedules and countdowns
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
-\fB--json\fP[=false]
-	Emit structured JSON to stdout
+\fB--output\fP="text"
+	Output mode: text, json, or value
 
 
 .SH SEE ALSO
