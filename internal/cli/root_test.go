@@ -264,6 +264,87 @@ func TestCLIJSONAliasMatchesOutputJSON(t *testing.T) {
 	}
 }
 
+func TestCLIJSONFalsePreservesTextOutput(t *testing.T) {
+	t.Parallel()
+
+	defaultStdout, defaultStderr, defaultExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"version",
+	)
+	falseStdout, falseStderr, falseExitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"version", "--json=false",
+	)
+
+	if defaultExitCode != app.ExitSuccess || falseExitCode != app.ExitSuccess {
+		t.Fatalf("default/false exit codes = %d/%d, want success", defaultExitCode, falseExitCode)
+	}
+	if defaultStderr != "" || falseStderr != "" {
+		t.Fatalf("stderr should be empty, got default=%q false=%q", defaultStderr, falseStderr)
+	}
+	if falseStdout != defaultStdout {
+		t.Fatalf("json=false stdout = %q, default stdout = %q", falseStdout, defaultStdout)
+	}
+}
+
+func TestCLIJSONFalseErrorsRenderToStderr(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "get", "--json=false", "--badflag",
+	)
+
+	if exitCode != app.ExitUsage {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitUsage)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty", stdout)
+	}
+	if !strings.Contains(stderr, "unknown flag: --badflag") {
+		t.Fatalf("stderr = %q, want flag parse error", stderr)
+	}
+}
+
+func TestCLIRejectsExplicitEmptyOutputMode(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "version",
+			args: []string{"version", "--output", ""},
+		},
+		{
+			name: "times get",
+			args: []string{"times", "get", "--output", ""},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			stdout, stderr, exitCode := executeTestCommand(t, testDependencies(t), tc.args...)
+			if exitCode != app.ExitUsage {
+				t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitUsage)
+			}
+			if stdout != "" {
+				t.Fatalf("stdout = %q, want empty", stdout)
+			}
+			if !strings.Contains(stderr, `unsupported output mode ""`) {
+				t.Fatalf("stderr = %q, want unsupported output mode error", stderr)
+			}
+		})
+	}
+}
+
 func TestCLIJSONErrorsIncludeDetails(t *testing.T) {
 	t.Parallel()
 
