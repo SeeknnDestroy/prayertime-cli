@@ -13,26 +13,23 @@ prayertime-cli - CLI-first, agent-native Islamic prayer times tool
 CLI-first, agent-native Islamic prayer times tool.
 
 .PP
-Contract:
+Start here:
+  - Use 'times get' for one day's prayer schedule.
+  - Use 'times countdown' to ask how long until the next prayer or a named prayer.
+  - Use 'locations search' first if a place name may be ambiguous.
+
+.PP
+Common tasks:
+  - prayertime-cli times get --query Istanbul --json
+  - prayertime-cli times countdown --query Istanbul --target next-prayer --json
+  - prayertime-cli locations search --query Springfield --country-code US --json
+
+.PP
+Output model:
   - Structured payloads go to stdout.
   - Human-readable errors and suggestions go to stderr.
-  - With --output json, errors are emitted as JSON on stdout.
-
-.PP
-Global output modes:
-  - --output text prints human-readable output.
-  - --output json prints structured JSON.
-  - --output value is reserved for commands that expose --field selectors.
-  - --json is a shortcut for --output json.
-
-.PP
-Exit codes:
-  - 0 success
-  - 1 internal failure
-  - 2 usage error
-  - 3 not found or ambiguous input
-  - 4 network or upstream timeout
-  - 5 reserved conflict/state error
+  - --json is a shortcut for structured JSON output.
+  - --output text|json|value is the generalized output switch.
 
 
 .SH OPTIONS
