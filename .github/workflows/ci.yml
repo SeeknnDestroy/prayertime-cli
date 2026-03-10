@@ -107,7 +107,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@v0
+        run: ./.github/scripts/install-syft.sh
 
       - name: Release snapshot
         uses: goreleaser/goreleaser-action@v6
