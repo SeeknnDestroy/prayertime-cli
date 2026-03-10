@@ -4,7 +4,7 @@
 
 1. Create a feature branch.
 2. Keep commits atomic and use Conventional Commit messages.
-3. Use the same Conventional Commit style for pull request titles: `type(scope): subject` or `type: subject`.
+3. Prefer the same Conventional Commit style for pull request titles: `type(scope): subject` or `type: subject`.
 4. Run `make verify` before opening or updating a pull request.
 5. Open a pull request instead of pushing directly to `main`.
 
