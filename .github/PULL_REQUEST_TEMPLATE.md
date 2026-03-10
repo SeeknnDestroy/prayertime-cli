@@ -1,6 +1,5 @@
 ## Title
 
-- [ ] PR title uses Conventional Commit style, for example `docs: refresh agent-native documentation`
 
 ## Summary
 
