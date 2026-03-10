@@ -1,14 +1,14 @@
 # prayertime-cli
 
-> Stateless CLI for Islamic prayer schedules and countdowns, designed for agents, shell scripts, and direct terminal use. MVP 1 supports location search, daily schedule lookup, and countdown queries with strict JSON support, quiet scalar output, and documented exit codes.
+> Stateless CLI for Islamic prayer schedules and countdowns, designed for agents, shell scripts, and direct terminal use. MVP 1 supports location search, daily schedule lookup, and countdown queries with visible `--json` and `--quiet` shortcuts, generalized `--output` modes, and documented exit codes.
 
 This index points to the highest-value hand-written docs for agent onboarding. Prefer the task guide first, then the contract reference for stable output and error semantics.
 
 ## Core Documentation
 
-- [README.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/README.md): Fast entry point covering installation, common tasks, output modes, aliases, and exit codes.
+- [README.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/README.md): Fast entry point covering installation, common tasks, visible agent shortcuts, output modes, aliases, and exit codes.
 - [docs/agent-workflows.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/docs/agent-workflows.md): Natural-language intents mapped to stable commands for location search, schedule lookup, next-prayer countdowns, specific-prayer countdowns, and recovery.
-- [docs/cli-contract.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/docs/cli-contract.md): Stable CLI contract for required inputs, JSON success shapes, quiet mode, aliases, error payloads, and exit codes.
+- [docs/cli-contract.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/docs/cli-contract.md): Stable CLI contract for required inputs, JSON success shapes, scalar output, aliases, error payloads, and exit codes.
 - [AGENTS.md](https://raw.githubusercontent.com/SeeknnDestroy/prayertime-cli/main/AGENTS.md): Compact repository briefing for coding agents, including source-of-truth rules and exact build, test, and docs commands.
 
 ## Architecture

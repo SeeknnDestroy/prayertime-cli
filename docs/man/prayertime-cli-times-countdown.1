@@ -23,10 +23,12 @@ Input rules:
 Output:
   - --output text prints a human-readable countdown.
   - --output json prints structured JSON.
+  - --json is a shortcut for --output json.
   - --output value prints only the selected --field value.
+  - --quiet is a shortcut for --output value.
   - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
   - With --field and --output json, the response is a single-key JSON object.
-  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+  - --quiet defaults to seconds_remaining.
 
 .PP
 View modes:
@@ -64,6 +66,10 @@ View modes:
 	Place name to resolve before fetching prayer times
 
 .PP
+\fB-q\fP, \fB--quiet\fP[=false]
+	Shortcut for --output value
+
+.PP
 \fB--target\fP=""
 	Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar
 
@@ -73,6 +79,10 @@ View modes:
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
+\fB--json\fP[=false]
+	Shortcut for --output json
+
+.PP
 \fB--output\fP="text"
 	Output mode: text, json, or value
 
@@ -80,9 +90,9 @@ View modes:
 .SH EXAMPLE
 .EX
 prayertime-cli times countdown --query Istanbul --target next-prayer
-prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
-prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --json
 .EE
 
 

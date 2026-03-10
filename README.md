@@ -7,7 +7,7 @@
 - Search locations with Open-Meteo geocoding.
 - Fetch daily prayer times from AlAdhan with `method=13` (Diyanet).
 - Count down to the next prayer or a named prayer.
-- Emit structured JSON on `stdout` or bare scalar values with `--quiet`.
+- Emit structured JSON on `stdout` with `--json` or bare scalar values with `--quiet`.
 
 ## Input Model
 
@@ -62,7 +62,8 @@ prayertime-cli locations search --query Istnbul --json
 ## Output Modes
 
 - `--json`: emit structured payloads to `stdout`. With `--json`, errors are also JSON on `stdout`.
-- `--quiet`: emit one bare scalar value. `times get` requires `--field` with `--quiet`.
+- `--quiet`: emit one bare scalar value. `times get` requires `--field`; `times countdown --quiet` defaults to `seconds_remaining`.
+- `--output text|json|value`: generalized form of the same output contract. Use `--output` when you want one explicit output switch across commands.
 - Default human mode: readable output on `stdout`; errors and suggestions on `stderr`.
 - If you need exact process exit codes, run the compiled binary directly. `go run` wraps non-zero exits.
 
@@ -92,9 +93,10 @@ go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ## Build And Docs
 
 ```bash
-go test ./...
-go run ./cmd/prayertime-cli-docs
-go build ./cmd/prayertime-cli
+make verify
+make docs
+make build
+make release-check
 ```
 
 ## Exit Codes

@@ -15,6 +15,25 @@
 - "Run the countdown from a fixed RFC3339 timestamp"
 - "Return JSON and preserve the exit code on ambiguous input"
 
+## Agent CLI Checklist
+
+- Structured output is discoverable:
+  - `--json` is visible in help and returns JSON on `stdout`
+  - `--quiet` is visible on scalar-capable commands and emits a single bare value
+  - `--output text|json|value` remains available for wrappers that want one explicit switch
+- Errors are automation-friendly:
+  - human-readable errors go to `stderr`
+  - `--json` returns structured error payloads on `stdout`
+  - exit codes stay stable and documented
+- Commands are safe and predictable:
+  - MVP 1 is stateless and read-only, so query operations are naturally idempotent
+  - no destructive commands exist, so `--dry-run` and `--yes` are intentionally not applicable in this version
+- Help is self-documenting:
+  - `--help` must expose examples for `--json`, `--quiet`, field selection, and deterministic countdown replay
+- Composability is covered:
+  - `--field` plus `--quiet` supports scalar pipelines
+  - full JSON payloads stay stable for agent parsing
+
 ## Verification Checklist
 
 Use the compiled binary for exit-code checks:
@@ -44,5 +63,6 @@ Confirm:
 - `iftar` works as a supported alias, not the default framing for all countdowns
 - `--quiet` returns scalar-only output
 - `--json` returns structured payloads and JSON error objects
+- `--output json` and `--output value` remain equivalent to the shortcut flags
 - missing location input returns exit code `2`
 - not-found or ambiguous input returns exit code `3`

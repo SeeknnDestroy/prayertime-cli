@@ -55,7 +55,9 @@ Input rules:
 Output:
   - --output text prints human-readable prayer times.
   - --output json prints structured JSON.
+  - --json is a shortcut for --output json.
   - --output value prints only the selected --field value.
+  - --quiet is a shortcut for --output value.
   - --field accepts canonical fields such as maghrib_at, timezone, method_name, and source.
   - With --field and --output json, the response is a single-key JSON object.
 
@@ -66,9 +68,9 @@ View modes:
 `),
 		Example: strings.TrimSpace(`
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Istanbul --date 2026-03-07 --output json
-prayertime-cli times get --query Istanbul --field maghrib_at --output value
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --output json
+prayertime-cli times get --query Istanbul --date 2026-03-07 --json
+prayertime-cli times get --query Istanbul --field maghrib_at --quiet
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --json
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mode, err := resolveOutputMode(cmd, quiet)
@@ -118,13 +120,12 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --output j
 	cmd.Flags().StringVar(&date, "date", "today", "Date in YYYY-MM-DD format or 'today'")
 	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as maghrib_at or method_name")
 	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Compatibility alias for --output value")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Shortcut for --output value")
 	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
 	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
 	cmd.MarkFlagsMutuallyExclusive("query", "lat")
 	cmd.MarkFlagsMutuallyExclusive("query", "lon")
 	cmd.MarkFlagsRequiredTogether("lat", "lon")
-	_ = cmd.Flags().MarkHidden("quiet")
 
 	return cmd
 }
@@ -155,10 +156,12 @@ Input rules:
 Output:
   - --output text prints a human-readable countdown.
   - --output json prints structured JSON.
+  - --json is a shortcut for --output json.
   - --output value prints only the selected --field value.
+  - --quiet is a shortcut for --output value.
   - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
   - With --field and --output json, the response is a single-key JSON object.
-  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+  - --quiet defaults to seconds_remaining.
 
 View modes:
   - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
@@ -167,9 +170,9 @@ View modes:
 `),
 		Example: strings.TrimSpace(`
 prayertime-cli times countdown --query Istanbul --target next-prayer
-prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
-prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --json
 `),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mode, err := resolveOutputMode(cmd, quiet)
@@ -239,14 +242,13 @@ prayertime-cli times countdown --query Istanbul --target maghrib --view detailed
 	cmd.Flags().StringVar(&at, "at", "", "Optional RFC3339 timestamp to evaluate countdown from")
 	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as seconds_remaining or target_at")
 	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Compatibility alias for --output value")
+	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Shortcut for --output value")
 	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
 	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
 	_ = cmd.MarkFlagRequired("target")
 	cmd.MarkFlagsMutuallyExclusive("query", "lat")
 	cmd.MarkFlagsMutuallyExclusive("query", "lon")
 	cmd.MarkFlagsRequiredTogether("lat", "lon")
-	_ = cmd.Flags().MarkHidden("quiet")
 
 	return cmd
 }

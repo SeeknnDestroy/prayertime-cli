@@ -72,6 +72,7 @@ Global output modes:
   - --output text prints human-readable output.
   - --output json prints structured JSON.
   - --output value is reserved for commands that expose --field selectors.
+  - --json is a shortcut for --output json.
 
 Exit codes:
   - 0 success
@@ -88,8 +89,7 @@ Exit codes:
 	cmd.SetOut(deps.Stdout)
 	cmd.SetErr(deps.Stderr)
 	cmd.PersistentFlags().String("output", string(outputText), "Output mode: text, json, or value")
-	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Compatibility alias for --output json")
-	_ = cmd.PersistentFlags().MarkHidden("json")
+	cmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Shortcut for --output json")
 	cmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
 		return app.NewUsageError(err.Error(), "", fmt.Sprintf("Run '%s --help' for usage.", command.CommandPath()))
 	})
