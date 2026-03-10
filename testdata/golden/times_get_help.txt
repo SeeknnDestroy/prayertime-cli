@@ -9,7 +9,9 @@ Input rules:
 Output:
   - --output text prints human-readable prayer times.
   - --output json prints structured JSON.
+  - --json is a shortcut for --output json.
   - --output value prints only the selected --field value.
+  - --quiet is a shortcut for --output value.
   - --field accepts canonical fields such as maghrib_at, timezone, method_name, and source.
   - With --field and --output json, the response is a single-key JSON object.
 
@@ -23,9 +25,9 @@ Usage:
 
 Examples:
 prayertime-cli times get --query Istanbul
-prayertime-cli times get --query Istanbul --date 2026-03-07 --output json
-prayertime-cli times get --query Istanbul --field maghrib_at --output value
-prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --output json
+prayertime-cli times get --query Istanbul --date 2026-03-07 --json
+prayertime-cli times get --query Istanbul --field maghrib_at --quiet
+prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --json
 
 Flags:
       --country-code string   Optional ISO country code filter
@@ -35,7 +37,9 @@ Flags:
       --lat float             Latitude coordinate
       --lon float             Longitude coordinate
       --query string          Place name to resolve before fetching prayer times
+  -q, --quiet                 Shortcut for --output value
       --view string           Response view: concise or detailed
 
 Global Flags:
+      --json            Shortcut for --output json
       --output string   Output mode: text, json, or value (default "text")

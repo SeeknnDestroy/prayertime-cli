@@ -22,6 +22,7 @@ Contract:
 ### Options inherited from parent commands
 
 ```
+      --json            Shortcut for --output json
       --output string   Output mode: text, json, or value (default "text")
 ```
 

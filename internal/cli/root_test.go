@@ -264,6 +264,62 @@ func TestCLIJSONAliasMatchesOutputJSON(t *testing.T) {
 	}
 }
 
+func TestCLIHelpShowsAgentShortcuts(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		args     []string
+		contains []string
+	}{
+		{
+			name: "root help shows json",
+			args: []string{"--help"},
+			contains: []string{
+				"--json",
+				"Shortcut for --output json",
+			},
+		},
+		{
+			name: "times get help shows quiet",
+			args: []string{"times", "get", "--help"},
+			contains: []string{
+				"--quiet",
+				"Shortcut for --output value",
+			},
+		},
+		{
+			name: "times countdown help shows quiet",
+			args: []string{"times", "countdown", "--help"},
+			contains: []string{
+				"--quiet",
+				"Shortcut for --output value",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			stdout, stderr, exitCode := executeTestCommand(t, testDependencies(t), tc.args...)
+			if exitCode != app.ExitSuccess {
+				t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
+			}
+			if stderr != "" {
+				t.Fatalf("stderr = %q, want empty", stderr)
+			}
+
+			for _, needle := range tc.contains {
+				if !strings.Contains(stdout, needle) {
+					t.Fatalf("stdout = %q, want %q", stdout, needle)
+				}
+			}
+		})
+	}
+}
+
 func TestCLIJSONFalsePreservesTextOutput(t *testing.T) {
 	t.Parallel()
 

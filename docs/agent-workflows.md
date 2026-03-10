@@ -112,5 +112,6 @@ Good intents:
 ## Output Mode Selection
 
 - Use `--json` for structured payloads and machine parsing.
-- Use `--quiet` only when a command already narrows to one scalar value.
+- Use `--quiet` when a command should emit a single scalar value.
+- Use `--output text|json|value` when an agent or wrapper wants one explicit output switch across commands.
 - Use default human mode for local terminal inspection.

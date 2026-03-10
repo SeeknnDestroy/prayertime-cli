@@ -39,6 +39,7 @@ prayertime-cli locations search --query London --country-code GB --output json
 ### Options inherited from parent commands
 
 ```
+      --json            Shortcut for --output json
       --output string   Output mode: text, json, or value (default "text")
 ```
 

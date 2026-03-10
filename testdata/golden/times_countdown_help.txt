@@ -9,10 +9,12 @@ Input rules:
 Output:
   - --output text prints a human-readable countdown.
   - --output json prints structured JSON.
+  - --json is a shortcut for --output json.
   - --output value prints only the selected --field value.
+  - --quiet is a shortcut for --output value.
   - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
   - With --field and --output json, the response is a single-key JSON object.
-  - Legacy --quiet maps to --output value and defaults to seconds_remaining.
+  - --quiet defaults to seconds_remaining.
 
 View modes:
   - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
@@ -24,9 +26,9 @@ Usage:
 
 Examples:
 prayertime-cli times countdown --query Istanbul --target next-prayer
-prayertime-cli times countdown --query Istanbul --target iftar --field seconds_remaining --output value
-prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --output json
-prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --output json
+prayertime-cli times countdown --query Istanbul --target iftar --quiet
+prayertime-cli times countdown --lat 41.01384 --lon 28.94966 --target asr --at 2026-03-07T12:00:00+03:00 --json
+prayertime-cli times countdown --query Istanbul --target maghrib --view detailed --json
 
 Flags:
       --at string             Optional RFC3339 timestamp to evaluate countdown from
@@ -36,8 +38,10 @@ Flags:
       --lat float             Latitude coordinate
       --lon float             Longitude coordinate
       --query string          Place name to resolve before fetching prayer times
+  -q, --quiet                 Shortcut for --output value
       --target string         Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar
       --view string           Response view: concise or detailed
 
 Global Flags:
+      --json            Shortcut for --output json
       --output string   Output mode: text, json, or value (default "text")

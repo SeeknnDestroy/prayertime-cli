@@ -15,6 +15,7 @@ Global output modes:
   - --output text prints human-readable output.
   - --output json prints structured JSON.
   - --output value is reserved for commands that expose --field selectors.
+  - --json is a shortcut for --output json.
 
 Exit codes:
   - 0 success
@@ -28,6 +29,7 @@ Exit codes:
 
 ```
   -h, --help            help for prayertime-cli
+      --json            Shortcut for --output json
       --output string   Output mode: text, json, or value (default "text")
 ```
 

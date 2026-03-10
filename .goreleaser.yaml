@@ -5,14 +5,14 @@ project_name: prayertime-cli
 
 before:
   hooks:
-    - go mod tidy
     - go test ./...
-    - go run ./cmd/prayertime-cli-docs
 
 builds:
   - id: prayertime-cli
     main: ./cmd/prayertime-cli
     binary: prayertime-cli
+    flags:
+      - -trimpath
     env:
       - CGO_ENABLED=0
     goos:

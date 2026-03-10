@@ -23,10 +23,9 @@ Homebrew publishing uses a cask in the tap's `Casks/` directory.
 ## Release Commands
 
 ```bash
-go run ./cmd/prayertime-cli-docs
-go test ./...
-goreleaser check
-goreleaser release --snapshot --clean
+make verify
+make release-check
+make release-snapshot
 git tag v0.1.0
 git push origin v0.1.0
 ```

@@ -30,6 +30,10 @@
   - `times get` requires `--field`
   - `times get --quiet` emits only the selected field value
   - `times countdown --quiet` emits only `seconds_remaining`
+- `--output text|json|value`:
+  - generalized form of the same output model
+  - `--output json` is equivalent to `--json`
+  - `--output value` is equivalent to `--quiet` when the command exposes a scalar path
 
 ## Alias Rules
 

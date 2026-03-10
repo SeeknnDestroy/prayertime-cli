@@ -7,7 +7,7 @@
 - Open-Meteo ile konum arama
 - AlAdhan `method=13` (Diyanet) ile günlük vakit alma
 - Bir sonraki namaza veya belirli bir vakte geri sayım yapma
-- `stdout` üzerinde JSON ya da `--quiet` ile tek değer döndürme
+- `--json` ile `stdout` üzerinde JSON ya da `--quiet` ile tek değer döndürme
 
 ## Girdi Modeli
 
@@ -62,7 +62,8 @@ prayertime-cli locations search --query Istnbul --json
 ## Çıktı Modları
 
 - `--json`: yapılandırılmış çıktı `stdout` üzerindedir. Hatalar da JSON olarak `stdout` üzerindedir.
-- `--quiet`: tek bir yalın değer döndürür. `times get` için `--field` gerekir.
+- `--quiet`: tek bir yalın değer döndürür. `times get` için `--field` gerekir; `times countdown --quiet` varsayılan olarak `seconds_remaining` döndürür.
+- `--output text|json|value`: aynı çıktı modelinin genel biçimidir. Tüm komutlarda tek bir çıktı anahtarı kullanmak istiyorsan `--output` kullan.
 - Varsayılan insan modu: okunabilir çıktı `stdout`, hata ve yönlendirme `stderr`.
 - Kesin çıkış kodları gerekiyorsa derlenmiş ikiliyi çalıştır. `go run` sıfır olmayan çıkışları sarar.
 
@@ -92,9 +93,10 @@ go install github.com/SeeknnDestroy/prayertime-cli/cmd/prayertime-cli@latest
 ## Geliştirme Ve Dokümantasyon
 
 ```bash
-go test ./...
-go run ./cmd/prayertime-cli-docs
-go build ./cmd/prayertime-cli
+make verify
+make docs
+make build
+make release-check
 ```
 
 ## Çıkış Kodları
