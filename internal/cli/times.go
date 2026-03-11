@@ -161,7 +161,7 @@ Output:
   - --quiet is a shortcut for --output value.
   - --field accepts canonical countdown fields such as seconds_remaining, target_at, maghrib_at, and method_name.
   - With --field and --output json, the response is a single-key JSON object.
-  - --quiet defaults to seconds_remaining.
+  - Without --field, both --quiet and --output value default to minutes_remaining.
 
 View modes:
   - concise: location_name, timezone, date, target, target_at, seconds_remaining, minutes_remaining
@@ -182,15 +182,7 @@ prayertime-cli times countdown --query Istanbul --target maghrib --view detailed
 
 			resolvedField := field
 			if mode == outputValue && resolvedField == "" {
-				if quiet {
-					resolvedField = "seconds_remaining"
-				} else {
-					return app.NewUsageError(
-						"--output value requires --field for times countdown",
-						"",
-						"Provide --field to choose a single countdown value.",
-					).WithDetails(app.ErrorDetails{ValidFields: app.ValidCountdownFields()})
-				}
+				resolvedField = "minutes_remaining"
 			}
 			if err := validateCountdownField(resolvedField); err != nil {
 				return err

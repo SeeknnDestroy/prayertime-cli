@@ -40,7 +40,7 @@ Good intents:
 
 ## Extract One Field
 
-Use `--field` with `--quiet` when the caller wants one value for synthesis, piping, or follow-on automation.
+Use `--field` with scalar output when the caller wants one specific value for synthesis, piping, or follow-on automation.
 
 ```bash
 prayertime-cli times get --query Ankara --country-code TR --field yatsi --quiet
@@ -56,7 +56,7 @@ Good intents:
 
 ## Generic Next-Prayer Countdown
 
-Use `next-prayer` for broad countdown questions like "how long until the next ezan?"
+Use `next-prayer` for broad countdown questions like "how long until the next ezan?" With no `--field`, scalar countdown output defaults to `minutes_remaining`.
 
 ```bash
 prayertime-cli times countdown --query Istanbul --target next-prayer --json
@@ -67,11 +67,11 @@ Good intents:
 
 - "Ezana kaç dakika kaldı?"
 - "How long until the next prayer?"
-- "Give me seconds until the next ezan"
+- "Give me minutes until the next prayer"
 
 ## Specific-Prayer Countdown
 
-Use named targets when the user asks for a specific prayer. Canonical targets are English; Turkish aliases are accepted.
+Use named targets when the user asks for a specific prayer. Canonical targets are English; Turkish aliases are accepted. With no `--field`, scalar countdown output defaults to `minutes_remaining`.
 
 ```bash
 prayertime-cli times countdown --query Istanbul --target asr --json
@@ -82,7 +82,7 @@ prayertime-cli times countdown --query Istanbul --target yatsi --json
 Good intents:
 
 - "How long until asr?"
-- "İftara kaç saniye kaldı?"
+- "İftara kaç dakika kaldı?"
 - "Yatsıya ne kadar kaldı?"
 
 ## Evaluate From A Specific Time
@@ -113,5 +113,6 @@ Good intents:
 
 - Use `--json` for structured payloads and machine parsing.
 - Use `--quiet` when a command should emit a single scalar value.
+- For countdown, `--quiet` and bare `--output value` default to `minutes_remaining`; use `--field` when you need a different scalar.
 - Use `--output text|json|value` when an agent or wrapper wants one explicit output switch across commands.
 - Use default human mode for local terminal inspection.

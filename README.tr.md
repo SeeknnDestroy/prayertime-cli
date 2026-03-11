@@ -62,8 +62,8 @@ prayertime-cli locations search --query Istnbul --json
 ## Çıktı Modları
 
 - `--json`: yapılandırılmış çıktı `stdout` üzerindedir. Hatalar da JSON olarak `stdout` üzerindedir.
-- `--quiet`: tek bir yalın değer döndürür. `times get` için `--field` gerekir; `times countdown --quiet` varsayılan olarak `seconds_remaining` döndürür.
-- `--output text|json|value`: aynı çıktı modelinin genel biçimidir. Tüm komutlarda tek bir çıktı anahtarı kullanmak istiyorsan `--output` kullan.
+- `--quiet`: tek bir yalın değer döndürür. `times get` için `--field` gerekir; `times countdown --quiet` varsayılan olarak `minutes_remaining` döndürür.
+- `--output text|json|value`: aynı çıktı modelinin genel biçimidir. `times countdown --output value` da varsayılan olarak `minutes_remaining` döndürür; diğer tekil çıktı yolları hâlâ `--field` gerektirebilir.
 - Varsayılan insan modu: okunabilir çıktı `stdout`, hata ve yönlendirme `stderr`.
 - Kesin çıkış kodları gerekiyorsa derlenmiş ikiliyi çalıştır. `go run` sıfır olmayan çıkışları sarar.
 

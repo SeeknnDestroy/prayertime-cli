@@ -225,7 +225,7 @@ func TestCLIQuietAliasMatchesOutputValue(t *testing.T) {
 	valueStdout, valueStderr, valueExitCode := executeTestCommand(
 		t,
 		testDependencies(t),
-		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--field", "seconds_remaining", "--output", "value",
+		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--output", "value",
 	)
 
 	if quietExitCode != app.ExitSuccess || valueExitCode != app.ExitSuccess {
@@ -236,6 +236,29 @@ func TestCLIQuietAliasMatchesOutputValue(t *testing.T) {
 	}
 	if quietStdout != valueStdout {
 		t.Fatalf("quiet stdout = %q, value stdout = %q", quietStdout, valueStdout)
+	}
+	if quietStdout != "69\n" {
+		t.Fatalf("quiet stdout = %q, want %q", quietStdout, "69\n")
+	}
+}
+
+func TestCLICountdownOutputValueRespectsExplicitField(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr, exitCode := executeTestCommand(
+		t,
+		testDependencies(t),
+		"times", "countdown", "--query", "Istanbul", "--target", "iftar", "--field", "seconds_remaining", "--output", "value",
+	)
+
+	if exitCode != app.ExitSuccess {
+		t.Fatalf("exitCode = %d, want %d", exitCode, app.ExitSuccess)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+	if stdout != "4140\n" {
+		t.Fatalf("stdout = %q, want %q", stdout, "4140\n")
 	}
 }
 
