@@ -31,7 +31,8 @@
 - Help is self-documenting:
   - `--help` must expose examples for `--json`, `--quiet`, field selection, and deterministic countdown replay
 - Composability is covered:
-  - `--field` plus `--quiet` supports scalar pipelines
+  - `--field` plus `--quiet` or `--output value` supports scalar pipelines
+  - countdown scalar defaults resolve to `minutes_remaining` when no `--field` is provided
   - full JSON payloads stay stable for agent parsing
 
 ## Verification Checklist
@@ -62,6 +63,7 @@ Confirm:
 - `next-prayer` is the generic countdown path
 - `iftar` works as a supported alias, not the default framing for all countdowns
 - `--quiet` returns scalar-only output
+- `times countdown --quiet` and bare `--output value` default to `minutes_remaining`
 - `--json` returns structured payloads and JSON error objects
 - `--output json` and `--output value` remain equivalent to the shortcut flags
 - missing location input returns exit code `2`

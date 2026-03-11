@@ -1,6 +1,6 @@
 # prayertime-cli
 
-> Stateless CLI for Islamic prayer schedules and countdowns, designed for agents, shell scripts, and direct terminal use. MVP 1 supports location search, daily schedule lookup, and countdown queries with visible `--json` and `--quiet` shortcuts, generalized `--output` modes, and documented exit codes.
+> Stateless CLI for Islamic prayer schedules and countdowns, designed for agents, shell scripts, and direct terminal use. MVP 1 supports location search, daily schedule lookup, and countdown queries with visible `--json` and `--quiet` shortcuts, generalized `--output` modes, countdown scalar defaults to `minutes_remaining`, and documented exit codes.
 
 This index points to the highest-value hand-written docs for agent onboarding. Prefer the task guide first, then the contract reference for stable output and error semantics.
 
