@@ -83,7 +83,7 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --json
 					"--output value requires --field for times get",
 					"",
 					"Provide --field to choose a single prayer-times value.",
-				).WithDetails(app.ErrorDetails{ValidFields: app.ValidTimesFields()})
+				).WithDetails(app.ErrorDetails{ValidFields: validTimesFields()})
 			}
 			if err := validateTimesField(field); err != nil {
 				return err
