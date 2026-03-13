@@ -99,6 +99,144 @@ func TestServiceGetCountdownUsesNextDayAfterTargetPasses(t *testing.T) {
 	}
 }
 
+func TestServiceGetCountdownNextPrayerUsesTomorrowImsakAfterIsha(t *testing.T) {
+	t.Parallel()
+
+	tz := mustLocation(t, "Europe/Istanbul")
+	service := NewService(
+		fakeResolver{
+			results: []Location{{
+				Name:        "Istanbul",
+				Country:     "Türkiye",
+				CountryCode: "TR",
+				Admin1:      "Istanbul",
+				Latitude:    41.01384,
+				Longitude:   28.94966,
+				Timezone:    "Europe/Istanbul",
+			}},
+		},
+		fakeProvider{
+			schedules: map[string]DaySchedule{
+				"2026-03-07": scheduleForDay(tz, 2026, 3, 7, 19, 9),
+				"2026-03-08": scheduleForDay(tz, 2026, 3, 8, 19, 10),
+			},
+		},
+		fixedClock{now: time.Date(2026, 3, 7, 21, 0, 0, 0, tz)},
+	)
+
+	response, err := service.GetCountdown(context.Background(), CountdownRequest{
+		Query:  "Istanbul",
+		Target: "next-prayer",
+	})
+	if err != nil {
+		t.Fatalf("GetCountdown returned error: %v", err)
+	}
+
+	if response.Target != "imsak" {
+		t.Fatalf("Target = %q, want imsak", response.Target)
+	}
+	if response.Date != "2026-03-08" {
+		t.Fatalf("Date = %q, want 2026-03-08", response.Date)
+	}
+	if response.TargetAt != "2026-03-08T05:46:00+03:00" {
+		t.Fatalf("TargetAt = %q, want 2026-03-08T05:46:00+03:00", response.TargetAt)
+	}
+}
+
+func TestServiceGetCountdownUsesScheduleTimezoneForAt(t *testing.T) {
+	t.Parallel()
+
+	tz := mustLocation(t, "Europe/Istanbul")
+	service := NewService(
+		fakeResolver{
+			results: []Location{{
+				Name:        "Istanbul",
+				Country:     "Türkiye",
+				CountryCode: "TR",
+				Admin1:      "Istanbul",
+				Latitude:    41.01384,
+				Longitude:   28.94966,
+				Timezone:    "Europe/Istanbul",
+			}},
+		},
+		fakeProvider{
+			schedules: map[string]DaySchedule{
+				"2026-03-08": scheduleForDay(tz, 2026, 3, 8, 19, 10),
+			},
+		},
+		fixedClock{now: time.Date(2026, 3, 7, 18, 0, 0, 0, time.UTC)},
+	)
+
+	at := time.Date(2026, 3, 7, 22, 30, 0, 0, time.UTC)
+	response, err := service.GetCountdown(context.Background(), CountdownRequest{
+		Query:  "Istanbul",
+		Target: "next-prayer",
+		At:     &at,
+	})
+	if err != nil {
+		t.Fatalf("GetCountdown returned error: %v", err)
+	}
+
+	if response.Date != "2026-03-08" {
+		t.Fatalf("Date = %q, want 2026-03-08", response.Date)
+	}
+	if response.Target != "imsak" {
+		t.Fatalf("Target = %q, want imsak", response.Target)
+	}
+}
+
+func TestServiceGetCountdownReturnsInternalErrorWhenTargetCannotBeResolved(t *testing.T) {
+	t.Parallel()
+
+	tz := mustLocation(t, "Europe/Istanbul")
+	service := NewService(
+		fakeResolver{
+			results: []Location{{
+				Name:        "Istanbul",
+				Country:     "Türkiye",
+				CountryCode: "TR",
+				Admin1:      "Istanbul",
+				Latitude:    41.01384,
+				Longitude:   28.94966,
+				Timezone:    "Europe/Istanbul",
+			}},
+		},
+		fakeProvider{
+			schedules: map[string]DaySchedule{
+				"2026-03-07": {
+					Latitude:  41.01384,
+					Longitude: 28.94966,
+					Timezone:  tz.String(),
+					Date:      time.Date(2026, 3, 7, 0, 0, 0, 0, tz),
+				},
+				"2026-03-08": {
+					Latitude:  41.01384,
+					Longitude: 28.94966,
+					Timezone:  tz.String(),
+					Date:      time.Date(2026, 3, 8, 0, 0, 0, 0, tz),
+				},
+			},
+		},
+		fixedClock{now: time.Date(2026, 3, 7, 21, 0, 0, 0, tz)},
+	)
+
+	_, err := service.GetCountdown(context.Background(), CountdownRequest{
+		Query:  "Istanbul",
+		Target: "next-prayer",
+	})
+	if err == nil {
+		t.Fatal("expected internal error")
+	}
+
+	cliErr := AsCLIError(err)
+	if cliErr.ExitCode != ExitFailure {
+		t.Fatalf("ExitCode = %d, want %d", cliErr.ExitCode, ExitFailure)
+	}
+	if cliErr.Message != "failed to resolve countdown target from schedule" {
+		t.Fatalf("Message = %q, want failed target resolution message", cliErr.Message)
+	}
+}
+
 func TestServiceGetTimesRejectsPartialCoordinates(t *testing.T) {
 	t.Parallel()
 

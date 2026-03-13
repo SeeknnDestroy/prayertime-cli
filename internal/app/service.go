@@ -103,33 +103,17 @@ func (s *Service) GetCountdown(ctx context.Context, req CountdownRequest) (Count
 		return CountdownResponse{}, err
 	}
 
-	localTZ, err := time.LoadLocation(schedule.Timezone)
+	localNow, err := localTimeInTimezone(schedule.Timezone, asOf)
 	if err != nil {
-		return CountdownResponse{}, NewInternalError("failed to load location timezone", schedule.Timezone, "", err)
+		return CountdownResponse{}, err
 	}
 
-	localNow := asOf.In(localTZ)
-	selectedTarget, targetTime := selectTarget(target, schedule, localNow)
-	if targetTime.IsZero() {
-		nextDay := dateOnly(localNow.Add(24 * time.Hour))
-		schedule, err = s.provider.GetByCoordinates(ctx, location.Latitude, location.Longitude, nextDay)
-		if err != nil {
-			return CountdownResponse{}, err
-		}
-		selectedTarget, targetTime = selectTarget(target, schedule, localNow)
+	schedule, selectedTarget, targetTime, err := s.resolveCountdownTarget(ctx, location, target, schedule, localNow)
+	if err != nil {
+		return CountdownResponse{}, err
 	}
 
 	secondsRemaining := int64(targetTime.Sub(localNow).Seconds())
-	if secondsRemaining < 0 {
-		nextDay := dateOnly(localNow.Add(24 * time.Hour))
-		schedule, err = s.provider.GetByCoordinates(ctx, location.Latitude, location.Longitude, nextDay)
-		if err != nil {
-			return CountdownResponse{}, err
-		}
-		selectedTarget, targetTime = selectTarget(target, schedule, localNow)
-		secondsRemaining = int64(targetTime.Sub(localNow).Seconds())
-	}
-
 	base := s.toTimesResponse(location, schedule)
 	return CountdownResponse{
 		TimesResponse:    base,
@@ -138,6 +122,26 @@ func (s *Service) GetCountdown(ctx context.Context, req CountdownRequest) (Count
 		SecondsRemaining: secondsRemaining,
 		MinutesRemaining: secondsRemaining / 60,
 	}, nil
+}
+
+func (s *Service) resolveCountdownTarget(ctx context.Context, location Location, target string, schedule DaySchedule, localNow time.Time) (DaySchedule, string, time.Time, error) {
+	selectedTarget, targetTime := selectTarget(target, schedule, localNow)
+	if countdownTargetResolved(targetTime, localNow) {
+		return schedule, selectedTarget, targetTime, nil
+	}
+
+	nextDate := localNow.Add(24 * time.Hour).Format("2006-01-02")
+	nextSchedule, err := s.fetchSchedule(ctx, location, nextDate, localNow)
+	if err != nil {
+		return DaySchedule{}, "", time.Time{}, err
+	}
+
+	selectedTarget, targetTime = selectTarget(target, nextSchedule, localNow)
+	if !countdownTargetResolved(targetTime, localNow) {
+		return DaySchedule{}, "", time.Time{}, NewInternalError("failed to resolve countdown target from schedule", target, "", nil)
+	}
+
+	return nextSchedule, selectedTarget, targetTime, nil
 }
 
 func (s *Service) resolveLocation(ctx context.Context, query, countryCode string, latitude, longitude *float64) (Location, error) {
@@ -313,6 +317,19 @@ func resolveDate(timezone, input string, asOf time.Time) (time.Time, bool, error
 func dateOnly(value time.Time) time.Time {
 	year, month, day := value.Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
+func localTimeInTimezone(timezone string, asOf time.Time) (time.Time, error) {
+	localTZ, err := time.LoadLocation(timezone)
+	if err != nil {
+		return time.Time{}, NewInternalError("failed to load location timezone", timezone, "", err)
+	}
+
+	return asOf.In(localTZ), nil
+}
+
+func countdownTargetResolved(targetTime, now time.Time) bool {
+	return !targetTime.IsZero() && !targetTime.Before(now)
 }
 
 func sameDay(left, right time.Time) bool {
