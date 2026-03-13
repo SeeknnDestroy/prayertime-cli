@@ -31,14 +31,11 @@ Contract:
 }
 
 func newTimesGetCmd(service *app.Service) *cobra.Command {
-	var query string
-	var countryCode string
+	var location locationFlags
 	var date string
 	var field string
 	var view string
 	var quiet bool
-	var latitude float64
-	var longitude float64
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -94,19 +91,7 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --json
 				return err
 			}
 
-			request := app.TimesRequest{
-				Query:       query,
-				CountryCode: strings.ToUpper(countryCode),
-				Date:        date,
-			}
-			if cmd.Flags().Changed("lat") {
-				request.Latitude = &latitude
-			}
-			if cmd.Flags().Changed("lon") {
-				request.Longitude = &longitude
-			}
-
-			response, err := service.GetTimes(cmd.Context(), request)
+			response, err := service.GetTimes(cmd.Context(), location.timesRequest(cmd, date))
 			if err != nil {
 				return err
 			}
@@ -115,31 +100,22 @@ prayertime-cli times get --lat 41.01384 --lon 28.94966 --view concise --json
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
-	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
+	location.bind(cmd)
 	cmd.Flags().StringVar(&date, "date", "today", "Date in YYYY-MM-DD format or 'today'")
 	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as maghrib_at or method_name")
 	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Shortcut for --output value")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
-	cmd.MarkFlagsMutuallyExclusive("query", "lat")
-	cmd.MarkFlagsMutuallyExclusive("query", "lon")
-	cmd.MarkFlagsRequiredTogether("lat", "lon")
 
 	return cmd
 }
 
 func newTimesCountdownCmd(service *app.Service) *cobra.Command {
-	var query string
-	var countryCode string
+	var location locationFlags
 	var target string
 	var at string
 	var field string
 	var view string
 	var quiet bool
-	var latitude float64
-	var longitude float64
 
 	cmd := &cobra.Command{
 		Use:   "countdown",
@@ -206,20 +182,7 @@ prayertime-cli times countdown --query Istanbul --target maghrib --view detailed
 				atValue = &parsed
 			}
 
-			request := app.CountdownRequest{
-				Query:       query,
-				CountryCode: strings.ToUpper(countryCode),
-				Target:      target,
-				At:          atValue,
-			}
-			if cmd.Flags().Changed("lat") {
-				request.Latitude = &latitude
-			}
-			if cmd.Flags().Changed("lon") {
-				request.Longitude = &longitude
-			}
-
-			response, err := service.GetCountdown(cmd.Context(), request)
+			response, err := service.GetCountdown(cmd.Context(), location.countdownRequest(cmd, target, atValue))
 			if err != nil {
 				return err
 			}
@@ -228,19 +191,76 @@ prayertime-cli times countdown --query Istanbul --target maghrib --view detailed
 		},
 	}
 
-	cmd.Flags().StringVar(&query, "query", "", "Place name to resolve before fetching prayer times")
-	cmd.Flags().StringVar(&countryCode, "country-code", "", "Optional ISO country code filter")
+	location.bind(cmd)
 	cmd.Flags().StringVar(&target, "target", "", "Target prayer such as next-prayer, imsak, fajr, sunrise, dhuhr, asr, maghrib, sunset, isha, or iftar")
 	cmd.Flags().StringVar(&at, "at", "", "Optional RFC3339 timestamp to evaluate countdown from")
 	cmd.Flags().StringVar(&field, "field", "", "Single canonical field to return, such as seconds_remaining or target_at")
 	cmd.Flags().StringVar(&view, "view", "", "Response view: concise or detailed")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Shortcut for --output value")
-	cmd.Flags().Float64Var(&latitude, "lat", 0, "Latitude coordinate")
-	cmd.Flags().Float64Var(&longitude, "lon", 0, "Longitude coordinate")
 	_ = cmd.MarkFlagRequired("target")
+
+	return cmd
+}
+
+type locationFlags struct {
+	query       string
+	countryCode string
+	latitude    float64
+	longitude   float64
+}
+
+func (flags *locationFlags) bind(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&flags.query, "query", "", "Place name to resolve before fetching prayer times")
+	cmd.Flags().StringVar(&flags.countryCode, "country-code", "", "Optional ISO country code filter")
+	cmd.Flags().Float64Var(&flags.latitude, "lat", 0, "Latitude coordinate")
+	cmd.Flags().Float64Var(&flags.longitude, "lon", 0, "Longitude coordinate")
 	cmd.MarkFlagsMutuallyExclusive("query", "lat")
 	cmd.MarkFlagsMutuallyExclusive("query", "lon")
 	cmd.MarkFlagsRequiredTogether("lat", "lon")
+}
 
-	return cmd
+func (flags locationFlags) timesRequest(cmd *cobra.Command, date string) app.TimesRequest {
+	input := flags.resolve(cmd)
+	return app.TimesRequest{
+		Query:       input.query,
+		CountryCode: input.countryCode,
+		Date:        date,
+		Latitude:    input.latitude,
+		Longitude:   input.longitude,
+	}
+}
+
+func (flags locationFlags) countdownRequest(cmd *cobra.Command, target string, at *time.Time) app.CountdownRequest {
+	input := flags.resolve(cmd)
+	return app.CountdownRequest{
+		Query:       input.query,
+		CountryCode: input.countryCode,
+		Target:      target,
+		At:          at,
+		Latitude:    input.latitude,
+		Longitude:   input.longitude,
+	}
+}
+
+func (flags locationFlags) resolve(cmd *cobra.Command) locationInput {
+	input := locationInput{
+		query:       flags.query,
+		countryCode: strings.ToUpper(flags.countryCode),
+	}
+
+	if cmd.Flags().Changed("lat") {
+		input.latitude = &flags.latitude
+	}
+	if cmd.Flags().Changed("lon") {
+		input.longitude = &flags.longitude
+	}
+
+	return input
+}
+
+type locationInput struct {
+	query       string
+	countryCode string
+	latitude    *float64
+	longitude   *float64
 }
